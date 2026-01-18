@@ -33,13 +33,17 @@ export default function WhaleCard({ trade, onDownload }: WhaleCardProps) {
     return 'hover:shadow-yellow-500/50';
   };
 
-  // Adaptive text size for payout based on number length
+  // Adaptive text size for payout based on formatted string length
   const getPayoutTextSize = () => {
     const formatted = formatCurrency(trade.potentialPayout);
     const length = formatted.length;
-    if (length > 12) return 'text-2xl md:text-3xl lg:text-4xl'; // $1,000,000.00+
-    if (length > 10) return 'text-3xl md:text-4xl lg:text-5xl'; // $100,000.00+
-    return 'text-4xl md:text-5xl lg:text-6xl'; // Default
+
+    // Based on character count for better responsiveness
+    if (length >= 12) return 'text-lg md:text-xl lg:text-2xl'; // Very long: $10,000,000+
+    if (length >= 10) return 'text-xl md:text-2xl lg:text-3xl'; // Long: $1,000,000+
+    if (length >= 8) return 'text-2xl md:text-3xl lg:text-4xl'; // Medium: $100,000+
+    if (length >= 6) return 'text-3xl md:text-4xl lg:text-5xl'; // Short: $10,000+
+    return 'text-4xl md:text-5xl lg:text-6xl'; // Very short: < $10,000
   };
 
   const isPayout = trade.potentialPayout > trade.betAmount * 2;
@@ -52,6 +56,11 @@ export default function WhaleCard({ trade, onDownload }: WhaleCardProps) {
       : null;
 
   const traderProfileUrl = `https://polymarket.com/profile/${trade.traderAddress}`;
+
+  // URL for trader's activity on this specific market
+  const traderMarketActivityUrl = trade.marketSlug
+    ? `https://polymarket.com/profile/${trade.traderAddress}?tab=positions`
+    : traderProfileUrl;
 
   const handleCopyLink = async () => {
     try {
@@ -79,8 +88,8 @@ export default function WhaleCard({ trade, onDownload }: WhaleCardProps) {
           'md:flex-row md:p-8 md:gap-8 md:min-h-[280px]'
         )}
       >
-        {/* LEFT COLUMN (60% on desktop) - Content */}
-        <div className="flex-1 md:w-[60%] flex flex-col justify-between">
+        {/* LEFT COLUMN (55% on desktop) - Content */}
+        <div className="flex-1 md:w-[55%] flex flex-col justify-between">
           {/* Trader Info - Clickable */}
           <a
             href={traderProfileUrl}
@@ -96,6 +105,7 @@ export default function WhaleCard({ trade, onDownload }: WhaleCardProps) {
                 height={56}
                 className="w-full h-full object-cover"
                 unoptimized={!trade.traderProfileImage}
+                crossOrigin="anonymous"
               />
             </div>
             <div className="flex-1">
@@ -149,6 +159,7 @@ export default function WhaleCard({ trade, onDownload }: WhaleCardProps) {
                   height={80}
                   className="w-full h-full object-cover"
                   unoptimized
+                  crossOrigin="anonymous"
                 />
               </div>
             )}
@@ -177,33 +188,41 @@ export default function WhaleCard({ trade, onDownload }: WhaleCardProps) {
           </div>
         </div>
 
-        {/* RIGHT COLUMN (40% on desktop) - Financials */}
-        <div className="md:w-[40%] flex flex-col justify-center items-end text-right border-t md:border-t-0 md:border-l border-white/10 pt-6 md:pt-0 md:pl-8">
+        {/* RIGHT COLUMN (45% on desktop) - Financials - Clickable */}
+        <a
+          href={traderMarketActivityUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="md:w-[45%] flex flex-col justify-center items-end text-right border-t md:border-t-0 md:border-l border-white/10 pt-6 md:pt-0 md:pl-6 hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
+        >
           {/* Bet Amount */}
-          <div className="mb-6 w-full">
-            <p className="text-sm text-white/50 mb-2 uppercase tracking-wider">Bet Amount</p>
-            <p className="text-3xl md:text-4xl font-bold text-white">
+          <div className="mb-4 w-full">
+            <p className="text-sm text-white/50 mb-1 uppercase tracking-wider flex items-center justify-end gap-1">
+              Bet Amount
+              <ExternalLink size={10} className="text-white/30" />
+            </p>
+            <p className="text-2xl md:text-3xl lg:text-4xl font-bold text-white">
               {formatCurrency(trade.betAmount)}
             </p>
           </div>
 
-          {/* Potential Payout - MASSIVE HERO with adaptive size */}
-          <div className="w-full bg-gradient-to-br from-white/10 to-white/5 rounded-lg p-6 mb-4">
-            <p className="text-xs md:text-sm text-white/60 mb-2 uppercase tracking-wider">
+          {/* Potential Payout - HERO with adaptive size and expanded width */}
+          <div className="w-full bg-gradient-to-br from-white/10 to-white/5 rounded-lg p-4 md:p-5">
+            <p className="text-xs md:text-sm text-white/60 mb-1 uppercase tracking-wider">
               Potential Payout
             </p>
             <p className={cn(
-              'font-black leading-none break-all',
+              'font-black leading-tight',
               getPayoutTextSize(),
               getPayoutGradient()
             )}>
               {formatCurrency(trade.potentialPayout)}
             </p>
-            <div className="mt-3 text-sm text-white/40">
+            <div className="mt-2 text-sm text-white/40">
               {(trade.potentialPayout / trade.betAmount).toFixed(2)}x return
             </div>
           </div>
-        </div>
+        </a>
 
         {/* Branding Watermark - Bottom Right (No Debug Labels) */}
         <div className="absolute bottom-4 right-4 opacity-30 text-xs font-mono text-white/60">

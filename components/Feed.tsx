@@ -29,29 +29,94 @@ export default function Feed() {
   // Convert oklab/oklch colors to RGB (html2canvas doesn't support them)
   const convertOklabColors = (element: HTMLElement) => {
     const allElements = element.querySelectorAll('*');
-    const colorProps = ['color', 'backgroundColor', 'borderColor', 'borderTopColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor'];
+
+    // Extended list of CSS properties that can contain colors
+    const colorProps = [
+      'color',
+      'background-color',
+      'background',
+      'background-image',
+      'border-color',
+      'border-top-color',
+      'border-bottom-color',
+      'border-left-color',
+      'border-right-color',
+      'fill',
+      'stroke'
+    ];
 
     const convertElement = (el: Element) => {
       const computed = window.getComputedStyle(el);
       const htmlEl = el as HTMLElement;
 
       colorProps.forEach(prop => {
-        const value = computed.getPropertyValue(prop.replace(/([A-Z])/g, '-$1').toLowerCase());
+        const value = computed.getPropertyValue(prop);
+
+        // Check if value contains oklab or oklch
         if (value && (value.includes('oklab') || value.includes('oklch'))) {
-          // Replace with fallback colors based on common Tailwind classes
-          if (value.includes('green') || htmlEl.classList.contains('text-green-400')) {
-            htmlEl.style.setProperty(prop.replace(/([A-Z])/g, '-$1').toLowerCase(), '#4ade80', 'important');
-          } else if (value.includes('red') || htmlEl.classList.contains('text-red-400')) {
-            htmlEl.style.setProperty(prop.replace(/([A-Z])/g, '-$1').toLowerCase(), '#f87171', 'important');
-          } else if (value.includes('purple') || htmlEl.classList.contains('text-purple-500')) {
-            htmlEl.style.setProperty(prop.replace(/([A-Z])/g, '-$1').toLowerCase(), '#a855f7', 'important');
-          } else if (value.includes('yellow') || htmlEl.classList.contains('text-yellow-400')) {
-            htmlEl.style.setProperty(prop.replace(/([A-Z])/g, '-$1').toLowerCase(), '#facc15', 'important');
-          } else if (value.includes('blue') || htmlEl.classList.contains('text-blue-400')) {
-            htmlEl.style.setProperty(prop.replace(/([A-Z])/g, '-$1').toLowerCase(), '#60a5fa', 'important');
+          // Map to RGB equivalents based on Tailwind color classes
+          let replacement = null;
+
+          // Check for gradient classes first
+          if (htmlEl.classList.contains('text-gradient-aurora')) {
+            htmlEl.style.setProperty('background', 'linear-gradient(to right, rgb(74, 222, 128), rgb(168, 85, 247))', 'important');
+            htmlEl.style.setProperty('background-clip', 'text', 'important');
+            htmlEl.style.setProperty('-webkit-background-clip', 'text', 'important');
+            htmlEl.style.setProperty('-webkit-text-fill-color', 'transparent', 'important');
+            return;
+          } else if (htmlEl.classList.contains('text-gradient-gold')) {
+            htmlEl.style.setProperty('background', 'linear-gradient(to right, rgb(250, 204, 21), rgb(253, 224, 71), rgb(251, 191, 36))', 'important');
+            htmlEl.style.setProperty('background-clip', 'text', 'important');
+            htmlEl.style.setProperty('-webkit-background-clip', 'text', 'important');
+            htmlEl.style.setProperty('-webkit-text-fill-color', 'transparent', 'important');
+            return;
+          } else if (htmlEl.classList.contains('text-gradient-red')) {
+            htmlEl.style.setProperty('background', 'linear-gradient(to right, rgb(248, 113, 113), rgb(236, 72, 153))', 'important');
+            htmlEl.style.setProperty('background-clip', 'text', 'important');
+            htmlEl.style.setProperty('-webkit-background-clip', 'text', 'important');
+            htmlEl.style.setProperty('-webkit-text-fill-color', 'transparent', 'important');
+            return;
+          }
+
+          // Map individual colors based on class names
+          if (htmlEl.classList.contains('text-green-400') || htmlEl.classList.contains('bg-green-400')) {
+            replacement = 'rgb(74, 222, 128)';
+          } else if (htmlEl.classList.contains('text-green-500') || htmlEl.classList.contains('bg-green-500')) {
+            replacement = 'rgb(34, 197, 94)';
+          } else if (htmlEl.classList.contains('text-red-400') || htmlEl.classList.contains('bg-red-400')) {
+            replacement = 'rgb(248, 113, 113)';
+          } else if (htmlEl.classList.contains('text-red-500') || htmlEl.classList.contains('bg-red-500')) {
+            replacement = 'rgb(239, 68, 68)';
+          } else if (htmlEl.classList.contains('text-purple-500') || htmlEl.classList.contains('bg-purple-500')) {
+            replacement = 'rgb(168, 85, 247)';
+          } else if (htmlEl.classList.contains('text-purple-600') || htmlEl.classList.contains('bg-purple-600')) {
+            replacement = 'rgb(147, 51, 234)';
+          } else if (htmlEl.classList.contains('text-yellow-400') || htmlEl.classList.contains('bg-yellow-400')) {
+            replacement = 'rgb(250, 204, 21)';
+          } else if (htmlEl.classList.contains('text-yellow-500') || htmlEl.classList.contains('bg-yellow-500')) {
+            replacement = 'rgb(234, 179, 8)';
+          } else if (htmlEl.classList.contains('text-blue-400') || htmlEl.classList.contains('bg-blue-400')) {
+            replacement = 'rgb(96, 165, 250)';
+          } else if (htmlEl.classList.contains('text-blue-500') || htmlEl.classList.contains('bg-blue-500')) {
+            replacement = 'rgb(59, 130, 246)';
+          } else if (htmlEl.classList.contains('text-blue-600') || htmlEl.classList.contains('bg-blue-600')) {
+            replacement = 'rgb(37, 99, 235)';
+          } else if (htmlEl.classList.contains('text-cyan-600') || htmlEl.classList.contains('bg-cyan-600')) {
+            replacement = 'rgb(8, 145, 178)';
+          } else if (htmlEl.classList.contains('text-pink-500') || htmlEl.classList.contains('bg-pink-500')) {
+            replacement = 'rgb(236, 72, 153)';
+          } else if (htmlEl.classList.contains('text-amber-400') || htmlEl.classList.contains('bg-amber-400')) {
+            replacement = 'rgb(251, 191, 36)';
+          } else if (prop === 'color' || prop === 'fill') {
+            // Default text/fill color
+            replacement = 'rgb(255, 255, 255)';
           } else {
-            // Default to white for text
-            htmlEl.style.setProperty(prop.replace(/([A-Z])/g, '-$1').toLowerCase(), '#ffffff', 'important');
+            // Default background color
+            replacement = 'rgb(0, 0, 0)';
+          }
+
+          if (replacement) {
+            htmlEl.style.setProperty(prop, replacement, 'important');
           }
         }
       });
@@ -121,26 +186,59 @@ export default function Feed() {
       // Convert oklab colors before rendering
       convertOklabColors(wrapper);
 
-      // Wait for images and fonts to fully load
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Wait for all images to load
+      const images = wrapper.querySelectorAll('img');
+      const imageLoadPromises = Array.from(images).map((img) => {
+        return new Promise((resolve) => {
+          if (img.complete) {
+            resolve(null);
+          } else {
+            img.onload = () => resolve(null);
+            img.onerror = () => {
+              console.warn('Failed to load image:', img.src);
+              resolve(null); // Resolve anyway to not block
+            };
+            // Timeout after 5 seconds
+            setTimeout(() => resolve(null), 5000);
+          }
+        });
+      });
 
-      // Generate canvas using html2canvas (more reliable than html-to-image)
+      await Promise.all(imageLoadPromises);
+
+      // Wait for fonts to fully load
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Generate canvas using html2canvas
       const canvas = await html2canvas(wrapper, {
         width: 1200,
         height: 675,
         scale: 2, // High DPI
-        backgroundColor: null,
-        logging: false,
-        allowTaint: true,
-        useCORS: true, // CRITICAL: Enable CORS for external images
-        imageTimeout: 15000, // 15 second timeout for images
+        backgroundColor: '#000000', // Solid black background
+        logging: true, // Enable logging to see errors
+        allowTaint: true, // Allow cross-origin images to taint the canvas
+        useCORS: false, // Don't use CORS (since we're allowing taint)
+        imageTimeout: 0, // No timeout since images are already loaded
+        ignoreElements: (element) => {
+          // Skip elements that might cause issues
+          return false;
+        },
         onclone: (clonedDoc) => {
-          // Ensure fonts are loaded in the cloned document
           const clonedWrapper = clonedDoc.body.querySelector('div');
           if (clonedWrapper) {
+            // Ensure proper font rendering
             clonedWrapper.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-            // Also convert colors in the cloned document
+
+            // Convert oklab colors in the cloned document
             convertOklabColors(clonedWrapper);
+
+            // Force all images to be visible
+            const clonedImages = clonedWrapper.querySelectorAll('img');
+            clonedImages.forEach((img) => {
+              const htmlImg = img as HTMLImageElement;
+              htmlImg.style.display = 'block';
+              htmlImg.style.opacity = '1';
+            });
           }
         },
       });
