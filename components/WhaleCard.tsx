@@ -64,7 +64,18 @@ export default function WhaleCard({ trade, onDownload }: WhaleCardProps) {
 
   const handleCopyLink = async () => {
     try {
-      const url = `${window.location.origin}?trade=${trade.id}`;
+      // Build URL with trade data for OG preview
+      const params = new URLSearchParams({
+        question: trade.question,
+        betAmount: trade.betAmount.toString(),
+        potentialPayout: trade.potentialPayout.toString(),
+        outcome: trade.outcome,
+        traderName: trade.traderName || '',
+        traderAddress: trade.traderAddress,
+      });
+
+      // Use /trade/[id] route for proper OG meta tags
+      const url = `${window.location.origin}/trade/${trade.id}?${params.toString()}`;
       await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
