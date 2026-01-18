@@ -22,16 +22,10 @@ export async function GET(request: NextRequest) {
     ? `${traderAddress.slice(0, 6)}...${traderAddress.slice(-4)}`
     : 'Whale Trader');
 
-  // Get initials for avatar
-  const getInitials = () => {
-    if (traderName) {
-      return traderName.slice(0, 2).toUpperCase();
-    }
-    if (traderAddress && traderAddress.length > 2) {
-      return traderAddress.slice(2, 4).toUpperCase();
-    }
-    return '🐋';
-  };
+  // Identicon URL - use PNG format for Satori compatibility
+  const identiconUrl = traderAddress
+    ? `https://api.dicebear.com/7.x/identicon/png?seed=${traderAddress}&size=56`
+    : null;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -113,7 +107,7 @@ export async function GET(request: NextRequest) {
             >
               {/* Trader Info Row */}
               <div style={{ display: 'flex', alignItems: 'center', marginBottom: 24 }}>
-                {/* Avatar with initials */}
+                {/* Avatar - identicon or gradient circle */}
                 <div
                   style={{
                     display: 'flex',
@@ -125,12 +119,19 @@ export async function GET(request: NextRequest) {
                     alignItems: 'center',
                     justifyContent: 'center',
                     marginRight: 16,
-                    fontSize: 20,
-                    fontWeight: 700,
-                    color: 'white',
+                    overflow: 'hidden',
                   }}
                 >
-                  {getInitials()}
+                  {identiconUrl ? (
+                    <img
+                      src={identiconUrl}
+                      width={56}
+                      height={56}
+                      style={{ width: 56, height: 56 }}
+                    />
+                  ) : (
+                    <span style={{ fontSize: 24 }}>🐋</span>
+                  )}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <span style={{ fontSize: 20, fontWeight: 600, color: 'rgba(255, 255, 255, 0.9)' }}>
