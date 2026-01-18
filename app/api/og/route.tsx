@@ -22,6 +22,17 @@ export async function GET(request: NextRequest) {
     ? `${traderAddress.slice(0, 6)}...${traderAddress.slice(-4)}`
     : 'Whale Trader');
 
+  // Get initials for avatar
+  const getInitials = () => {
+    if (traderName) {
+      return traderName.slice(0, 2).toUpperCase();
+    }
+    if (traderAddress && traderAddress.length > 2) {
+      return traderAddress.slice(2, 4).toUpperCase();
+    }
+    return '🐋';
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -43,9 +54,6 @@ export async function GET(request: NextRequest) {
 
   const displayQuestion = question.length > 80 ? question.slice(0, 80) + '...' : question;
 
-  // Generate identicon URL for trader
-  const identiconUrl = `https://api.dicebear.com/7.x/identicon/svg?seed=${traderAddress || 'whale'}`;
-
   return new ImageResponse(
     (
       <div
@@ -55,7 +63,6 @@ export async function GET(request: NextRequest) {
           width: '100%',
           height: '100%',
           backgroundColor: '#030303',
-          padding: 0,
           position: 'relative',
         }}
       >
@@ -106,27 +113,24 @@ export async function GET(request: NextRequest) {
             >
               {/* Trader Info Row */}
               <div style={{ display: 'flex', alignItems: 'center', marginBottom: 24 }}>
-                {/* Profile Image */}
+                {/* Avatar with initials */}
                 <div
                   style={{
                     display: 'flex',
                     width: 56,
                     height: 56,
                     borderRadius: 28,
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    background: 'linear-gradient(135deg, #a855f7, #6366f1)',
                     border: '2px solid rgba(255, 255, 255, 0.2)',
-                    overflow: 'hidden',
                     alignItems: 'center',
                     justifyContent: 'center',
                     marginRight: 16,
+                    fontSize: 20,
+                    fontWeight: 700,
+                    color: 'white',
                   }}
                 >
-                  <img
-                    src={identiconUrl}
-                    width={56}
-                    height={56}
-                    style={{ width: 56, height: 56 }}
-                  />
+                  {getInitials()}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <span style={{ fontSize: 20, fontWeight: 600, color: 'rgba(255, 255, 255, 0.9)' }}>
@@ -277,7 +281,7 @@ export async function GET(request: NextRequest) {
             </div>
           </div>
 
-          {/* Footer */}
+          {/* Footer - Branding like Header */}
           <div
             style={{
               display: 'flex',
@@ -288,14 +292,28 @@ export async function GET(request: NextRequest) {
               paddingRight: 8,
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: 32, fontWeight: 800, color: '#4ade80' }}>POLY</span>
-              <span style={{ fontSize: 32, fontWeight: 800, color: '#a855f7' }}>WAVE</span>
-              <span style={{ fontSize: 28 }}>🐋</span>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: 36, fontWeight: 900, color: 'white', letterSpacing: -1 }}>
+                polywave
+              </span>
+              {/* Gradient line like in Header */}
+              <div
+                style={{
+                  display: 'flex',
+                  width: 180,
+                  height: 4,
+                  background: 'linear-gradient(to right, #4ade80, #a855f7)',
+                  borderRadius: 2,
+                  marginTop: 4,
+                }}
+              />
             </div>
-            <span style={{ fontSize: 18, color: 'rgba(255, 255, 255, 0.4)' }}>
-              polywave.trade
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 32 }}>🐋</span>
+              <span style={{ fontSize: 16, color: 'rgba(255, 255, 255, 0.4)' }}>
+                polywave.trade
+              </span>
+            </div>
           </div>
         </div>
       </div>
