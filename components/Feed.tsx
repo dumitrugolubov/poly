@@ -26,6 +26,41 @@ export default function Feed() {
     return () => clearInterval(interval);
   }, []);
 
+  // Convert oklab/oklch colors to RGB (html2canvas doesn't support them)
+  const convertOklabColors = (element: HTMLElement) => {
+    const allElements = element.querySelectorAll('*');
+    const colorProps = ['color', 'backgroundColor', 'borderColor', 'borderTopColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor'];
+
+    const convertElement = (el: Element) => {
+      const computed = window.getComputedStyle(el);
+      const htmlEl = el as HTMLElement;
+
+      colorProps.forEach(prop => {
+        const value = computed.getPropertyValue(prop.replace(/([A-Z])/g, '-$1').toLowerCase());
+        if (value && (value.includes('oklab') || value.includes('oklch'))) {
+          // Replace with fallback colors based on common Tailwind classes
+          if (value.includes('green') || htmlEl.classList.contains('text-green-400')) {
+            htmlEl.style.setProperty(prop.replace(/([A-Z])/g, '-$1').toLowerCase(), '#4ade80', 'important');
+          } else if (value.includes('red') || htmlEl.classList.contains('text-red-400')) {
+            htmlEl.style.setProperty(prop.replace(/([A-Z])/g, '-$1').toLowerCase(), '#f87171', 'important');
+          } else if (value.includes('purple') || htmlEl.classList.contains('text-purple-500')) {
+            htmlEl.style.setProperty(prop.replace(/([A-Z])/g, '-$1').toLowerCase(), '#a855f7', 'important');
+          } else if (value.includes('yellow') || htmlEl.classList.contains('text-yellow-400')) {
+            htmlEl.style.setProperty(prop.replace(/([A-Z])/g, '-$1').toLowerCase(), '#facc15', 'important');
+          } else if (value.includes('blue') || htmlEl.classList.contains('text-blue-400')) {
+            htmlEl.style.setProperty(prop.replace(/([A-Z])/g, '-$1').toLowerCase(), '#60a5fa', 'important');
+          } else {
+            // Default to white for text
+            htmlEl.style.setProperty(prop.replace(/([A-Z])/g, '-$1').toLowerCase(), '#ffffff', 'important');
+          }
+        }
+      });
+    };
+
+    convertElement(element);
+    allElements.forEach(convertElement);
+  };
+
   const handleDownload = async (trade: WhaleTrade) => {
     const cardElement = document.getElementById(`whale-card-${trade.id}`);
     if (!cardElement) {
@@ -83,6 +118,9 @@ export default function Feed() {
       wrapper.appendChild(clone);
       document.body.appendChild(wrapper);
 
+      // Convert oklab colors before rendering
+      convertOklabColors(wrapper);
+
       // Wait for images and fonts to fully load
       await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -101,6 +139,8 @@ export default function Feed() {
           const clonedWrapper = clonedDoc.body.querySelector('div');
           if (clonedWrapper) {
             clonedWrapper.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            // Also convert colors in the cloned document
+            convertOklabColors(clonedWrapper);
           }
         },
       });

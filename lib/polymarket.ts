@@ -31,7 +31,7 @@ interface PolymarketTrade {
  * @param minAmount Minimum trade amount in USDC to be considered a whale trade
  * @returns Array of whale trades
  */
-export async function fetchWhaleTrades(minAmount: number = 500): Promise<WhaleTrade[]> {
+export async function fetchWhaleTrades(minAmount: number = 1000): Promise<WhaleTrade[]> {
   if (!USE_REAL_API) {
     console.log('📊 Using mock whale trades data (USE_REAL_API=false)');
     return getMockWhaleTrades();
@@ -89,6 +89,8 @@ export async function fetchWhaleTrades(minAmount: number = 500): Promise<WhaleTr
         // Event info
         eventImage: trade.icon || undefined,
         marketTitle: trade.title,
+        marketSlug: trade.slug || undefined,
+        eventSlug: trade.eventSlug || undefined,
       };
     });
 

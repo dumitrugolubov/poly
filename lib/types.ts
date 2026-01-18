@@ -14,6 +14,8 @@ export interface WhaleTrade {
   traderBio?: string;
   eventImage?: string;
   marketTitle?: string; // Cleaner title from Gamma API
+  marketSlug?: string; // For Polymarket URL
+  eventSlug?: string; // For event URL
 }
 
 export interface PolymarketBet {

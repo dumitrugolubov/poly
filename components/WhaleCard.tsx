@@ -2,7 +2,7 @@
 
 import { WhaleTrade } from '@/lib/types';
 import { formatCurrency, formatTimestamp, shortenAddress, getIdenticonUrl, cn } from '@/lib/utils';
-import { Download, TrendingUp, Twitter, Link2, Check } from 'lucide-react';
+import { Download, TrendingUp, Twitter, Link2, Check, ExternalLink } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
 
@@ -33,7 +33,25 @@ export default function WhaleCard({ trade, onDownload }: WhaleCardProps) {
     return 'hover:shadow-yellow-500/50';
   };
 
+  // Adaptive text size for payout based on number length
+  const getPayoutTextSize = () => {
+    const formatted = formatCurrency(trade.potentialPayout);
+    const length = formatted.length;
+    if (length > 12) return 'text-2xl md:text-3xl lg:text-4xl'; // $1,000,000.00+
+    if (length > 10) return 'text-3xl md:text-4xl lg:text-5xl'; // $100,000.00+
+    return 'text-4xl md:text-5xl lg:text-6xl'; // Default
+  };
+
   const isPayout = trade.potentialPayout > trade.betAmount * 2;
+
+  // Polymarket URLs
+  const marketUrl = trade.eventSlug
+    ? `https://polymarket.com/event/${trade.eventSlug}`
+    : trade.marketSlug
+      ? `https://polymarket.com/event/${trade.marketSlug}`
+      : null;
+
+  const traderProfileUrl = `https://polymarket.com/profile/${trade.traderAddress}`;
 
   const handleCopyLink = async () => {
     try {
@@ -63,8 +81,13 @@ export default function WhaleCard({ trade, onDownload }: WhaleCardProps) {
       >
         {/* LEFT COLUMN (60% on desktop) - Content */}
         <div className="flex-1 md:w-[60%] flex flex-col justify-between">
-          {/* Trader Info */}
-          <div className="flex items-center gap-3 mb-4">
+          {/* Trader Info - Clickable */}
+          <a
+            href={traderProfileUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 mb-4 hover:bg-white/5 rounded-lg p-2 -m-2 transition-colors cursor-pointer"
+          >
             <div className="w-12 h-12 md:w-14 md:h-14 rounded-full overflow-hidden bg-white/10 flex items-center justify-center ring-2 ring-white/20">
               <Image
                 src={trade.traderProfileImage || getIdenticonUrl(trade.traderAddress)}
@@ -77,18 +100,21 @@ export default function WhaleCard({ trade, onDownload }: WhaleCardProps) {
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <p className="text-sm md:text-base text-white/90 font-semibold">
+                <p className="text-sm md:text-base text-white/90 font-semibold hover:text-white transition-colors">
                   {trade.traderName || shortenAddress(trade.traderAddress)}
                 </p>
+                <ExternalLink size={12} className="text-white/40" />
                 {trade.traderTwitterHandle && (
-                  <a
-                    href={`https://twitter.com/${trade.traderTwitterHandle}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-400 hover:text-blue-300 transition-colors"
+                  <span
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      window.open(`https://twitter.com/${trade.traderTwitterHandle}`, '_blank');
+                    }}
+                    className="text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
                   >
                     <Twitter size={14} />
-                  </a>
+                  </span>
                 )}
               </div>
               {!trade.traderName && (
@@ -100,12 +126,22 @@ export default function WhaleCard({ trade, onDownload }: WhaleCardProps) {
                 {formatTimestamp(trade.timestamp)}
               </p>
             </div>
-          </div>
+          </a>
 
-          {/* Market Question with Event Image - HERO */}
-          <div className="flex-1 flex items-center gap-4">
+          {/* Market Question with Event Image - HERO - Clickable */}
+          <a
+            href={marketUrl || '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              "flex-1 flex items-center gap-4 hover:bg-white/5 rounded-lg p-2 -m-2 transition-colors",
+              marketUrl ? "cursor-pointer" : "cursor-default"
+            )}
+            onClick={(e) => !marketUrl && e.preventDefault()}
+          >
             {trade.eventImage && (
-              <div className="w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden bg-white/10 flex-shrink-0">
+              <div className="w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gradient-to-br from-purple-500/30 to-blue-500/30">
+                {/* Gradient background for transparent images */}
                 <Image
                   src={trade.eventImage}
                   alt="Event"
@@ -116,10 +152,13 @@ export default function WhaleCard({ trade, onDownload }: WhaleCardProps) {
                 />
               </div>
             )}
-            <h3 className="text-xl md:text-2xl lg:text-3xl font-bold text-white leading-tight">
-              {trade.question}
-            </h3>
-          </div>
+            <div className="flex items-start gap-2">
+              <h3 className="text-xl md:text-2xl lg:text-3xl font-bold text-white leading-tight hover:text-white/90 transition-colors">
+                {trade.question}
+              </h3>
+              {marketUrl && <ExternalLink size={16} className="text-white/40 flex-shrink-0 mt-1" />}
+            </div>
+          </a>
 
           {/* Outcome Badge */}
           <div className="flex items-center gap-2 mt-4">
@@ -148,13 +187,14 @@ export default function WhaleCard({ trade, onDownload }: WhaleCardProps) {
             </p>
           </div>
 
-          {/* Potential Payout - MASSIVE HERO */}
+          {/* Potential Payout - MASSIVE HERO with adaptive size */}
           <div className="w-full bg-gradient-to-br from-white/10 to-white/5 rounded-lg p-6 mb-4">
             <p className="text-xs md:text-sm text-white/60 mb-2 uppercase tracking-wider">
               Potential Payout
             </p>
             <p className={cn(
-              'text-4xl md:text-5xl lg:text-6xl font-black leading-none',
+              'font-black leading-none break-all',
+              getPayoutTextSize(),
               getPayoutGradient()
             )}>
               {formatCurrency(trade.potentialPayout)}
