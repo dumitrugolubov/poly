@@ -11,16 +11,18 @@ export async function GET(request: Request) {
     const response = await fetch(`${DATA_API_BASE}/trades?limit=${limit}`, {
       headers: {
         'Accept': 'application/json',
+        'User-Agent': 'Polywave/1.0',
       },
-      // Revalidate every 30 seconds
-      next: { revalidate: 30 },
+      cache: 'no-store', // Don't cache to always get fresh data
     });
 
     if (!response.ok) {
+      console.error(`Polymarket API error: ${response.status} ${response.statusText}`);
       throw new Error(`API responded with status: ${response.status}`);
     }
 
     const trades = await response.json();
+    console.log(`Fetched ${trades.length} trades from Polymarket`);
 
     // Filter for whale trades (large amounts) and BUY orders only
     // Sort by size descending to show biggest trades first

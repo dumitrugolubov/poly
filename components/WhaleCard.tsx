@@ -117,8 +117,7 @@ export default function WhaleCard({ trade, onDownload }: WhaleCardProps) {
                 height={56}
                 className="w-full h-full object-cover"
                 unoptimized={!trade.traderProfileImage}
-                crossOrigin="anonymous"
-              />
+                              />
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
@@ -171,8 +170,7 @@ export default function WhaleCard({ trade, onDownload }: WhaleCardProps) {
                   height={80}
                   className="w-full h-full object-cover"
                   unoptimized
-                  crossOrigin="anonymous"
-                />
+                                  />
               </div>
             )}
             <div className="flex items-start gap-2">

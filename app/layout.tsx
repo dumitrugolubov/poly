@@ -3,7 +3,7 @@ import './globals.css';
 import AuroraBackground from '@/components/AuroraBackground';
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'https://polywave.trade'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'https://www.polywave.trade'),
   title: 'Polywave - Real-Time Polymarket Whale Tracker',
   description: 'Track the biggest bets on Polymarket in real-time. See whale trades, potential payouts, and follow smart money moves on prediction markets.',
   openGraph: {
