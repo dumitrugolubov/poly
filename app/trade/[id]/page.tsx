@@ -23,7 +23,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
   const traderName = params.traderName || '';
   const traderAddress = params.traderAddress || '';
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://polywave.trade';
+  const baseUrl = 'https://polywave.trade';
 
   // Build OG image URL with all parameters
   const ogParams = new URLSearchParams({
