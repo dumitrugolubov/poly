@@ -44,7 +44,8 @@ export async function GET(request: NextRequest) {
   const outcomeBgColor = isYes ? 'rgba(74, 222, 128, 0.2)' : 'rgba(248, 113, 113, 0.2)';
   const payoutColor = isHighROI ? '#facc15' : outcomeColor;
 
-  const displayQuestion = question.length > 90 ? question.slice(0, 90) + '...' : question;
+  // Shorter limit to fit in left column without overflow
+  const displayQuestion = question.length > 70 ? question.slice(0, 70) + '...' : question;
 
   return new ImageResponse(
     (
@@ -141,39 +142,40 @@ export async function GET(request: NextRequest) {
             </div>
 
             {/* Question - HERO */}
-            <div style={{ display: 'flex', flex: 1, alignItems: 'center', paddingTop: 24, paddingBottom: 24 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-                {eventImage && (
-                  <div
-                    style={{
-                      display: 'flex',
-                      width: 100,
-                      height: 100,
-                      borderRadius: 16,
-                      overflow: 'hidden',
-                      flexShrink: 0,
-                      background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(59, 130, 246, 0.3))',
-                    }}
-                  >
-                    <img
-                      src={eventImage}
-                      width={100}
-                      height={100}
-                      style={{ width: 100, height: 100, objectFit: 'cover' }}
-                    />
-                  </div>
-                )}
-                <span
+            <div style={{ display: 'flex', flex: 1, alignItems: 'center', paddingTop: 24, paddingBottom: 24, overflow: 'hidden' }}>
+              {eventImage && (
+                <div
                   style={{
-                    fontSize: 38,
-                    fontWeight: 800,
-                    color: 'white',
-                    lineHeight: 1.2,
+                    display: 'flex',
+                    width: 100,
+                    height: 100,
+                    borderRadius: 16,
+                    overflow: 'hidden',
+                    flexShrink: 0,
+                    marginRight: 24,
+                    background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(59, 130, 246, 0.3))',
                   }}
                 >
-                  {displayQuestion}
-                </span>
-              </div>
+                  <img
+                    src={eventImage}
+                    width={100}
+                    height={100}
+                    style={{ width: 100, height: 100, objectFit: 'cover' }}
+                  />
+                </div>
+              )}
+              <span
+                style={{
+                  fontSize: 36,
+                  fontWeight: 800,
+                  color: 'white',
+                  lineHeight: 1.25,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {displayQuestion}
+              </span>
             </div>
 
             {/* Outcome Badge */}
