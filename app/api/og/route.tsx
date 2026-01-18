@@ -14,7 +14,7 @@ function formatCurrency(value: number): string {
 }
 
 function shortenAddress(address: string): string {
-  if (address.length <= 10) return address;
+  if (!address || address.length <= 10) return address || '';
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
@@ -29,17 +29,18 @@ export async function GET(request: NextRequest) {
     const outcome = searchParams.get('outcome') || 'Yes';
     const traderName = searchParams.get('traderName') || '';
     const traderAddress = searchParams.get('traderAddress') || '';
+    const eventImage = searchParams.get('eventImage') || '';
 
     const isYes = outcome === 'Yes';
-    const multiplier = (potentialPayout / betAmount).toFixed(2);
+    const multiplier = betAmount > 0 ? (potentialPayout / betAmount).toFixed(2) : '0';
 
     // Determine payout color gradient
     const payoutGradient =
       parseFloat(multiplier) > 2.5
-        ? 'linear-gradient(to right, #facc15, #fde68a, #fbbf24)' // Gold
+        ? 'linear-gradient(to right, #facc15, #fde68a, #fbbf24)'
         : isYes
-          ? 'linear-gradient(to right, #4ade80, #a855f7)' // Green to purple
-          : 'linear-gradient(to right, #f87171, #ec4899)'; // Red to pink
+          ? 'linear-gradient(to right, #4ade80, #a855f7)'
+          : 'linear-gradient(to right, #f87171, #ec4899)';
 
     return new ImageResponse(
       (
@@ -54,25 +55,19 @@ export async function GET(request: NextRequest) {
             padding: '40px',
           }}
         >
-          {/* Header with branding */}
+          {/* Header */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              marginBottom: '30px',
+              marginBottom: '24px',
             }}
           >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-              }}
-            >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div
                 style={{
-                  fontSize: '32px',
+                  fontSize: '36px',
                   fontWeight: 800,
                   background: 'linear-gradient(to right, #4ade80, #a855f7)',
                   backgroundClip: 'text',
@@ -81,26 +76,14 @@ export async function GET(request: NextRequest) {
               >
                 POLYWAVE
               </div>
-              <div
-                style={{
-                  fontSize: '20px',
-                  color: 'rgba(255,255,255,0.5)',
-                  fontWeight: 500,
-                }}
-              >
+              <div style={{ fontSize: '20px', color: 'rgba(255,255,255,0.5)' }}>
                 Whale Tracker
               </div>
             </div>
-            <div
-              style={{
-                fontSize: '48px',
-              }}
-            >
-              🐋
-            </div>
+            <div style={{ fontSize: '48px' }}>🐋</div>
           </div>
 
-          {/* Main card */}
+          {/* Main card - 60/40 split */}
           <div
             style={{
               display: 'flex',
@@ -112,74 +95,66 @@ export async function GET(request: NextRequest) {
               overflow: 'hidden',
             }}
           >
-            {/* Left side - Question & Trader */}
+            {/* Left side - 60% - Question & Trader */}
             <div
               style={{
                 display: 'flex',
                 flexDirection: 'column',
-                flex: 1,
-                padding: '40px',
+                width: '60%',
+                padding: '36px',
                 justifyContent: 'space-between',
               }}
             >
-              {/* Trader info */}
-              {(traderName || traderAddress) && (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    marginBottom: '20px',
-                  }}
-                >
-                  <div
+              {/* Trader info with event image */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+                {eventImage && (
+                  <img
+                    src={eventImage}
+                    alt=""
+                    width={64}
+                    height={64}
                     style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '50%',
-                      background: 'linear-gradient(135deg, #4ade80, #a855f7)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '24px',
+                      width: '64px',
+                      height: '64px',
+                      borderRadius: '12px',
+                      objectFit: 'cover',
                     }}
-                  >
-                    🦈
-                  </div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                    }}
-                  >
+                  />
+                )}
+                {(traderName || traderAddress) && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <div
                       style={{
-                        fontSize: '20px',
-                        fontWeight: 600,
-                        color: '#ffffff',
+                        width: '48px',
+                        height: '48px',
+                        borderRadius: '50%',
+                        background: 'linear-gradient(135deg, #4ade80, #a855f7)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '24px',
                       }}
                     >
-                      {traderName || shortenAddress(traderAddress)}
+                      🦈
                     </div>
-                    {traderName && traderAddress && (
-                      <div
-                        style={{
-                          fontSize: '14px',
-                          color: 'rgba(255,255,255,0.5)',
-                          fontFamily: 'monospace',
-                        }}
-                      >
-                        {shortenAddress(traderAddress)}
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ fontSize: '20px', fontWeight: 600, color: '#ffffff' }}>
+                        {traderName || shortenAddress(traderAddress)}
                       </div>
-                    )}
+                      {traderName && traderAddress && (
+                        <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', fontFamily: 'monospace' }}>
+                          {shortenAddress(traderAddress)}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
-              {/* Question */}
+              {/* Question - HERO */}
               <div
                 style={{
-                  fontSize: '36px',
+                  fontSize: '32px',
                   fontWeight: 700,
                   color: '#ffffff',
                   lineHeight: 1.3,
@@ -188,25 +163,18 @@ export async function GET(request: NextRequest) {
                   alignItems: 'center',
                 }}
               >
-                {question.length > 100 ? question.slice(0, 100) + '...' : question}
+                {question.length > 120 ? question.slice(0, 120) + '...' : question}
               </div>
 
               {/* Outcome badge */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  marginTop: '20px',
-                }}
-              >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '16px' }}>
                 <div
                   style={{
-                    padding: '12px 24px',
+                    padding: '12px 28px',
                     borderRadius: '12px',
                     background: isYes ? 'rgba(74, 222, 128, 0.2)' : 'rgba(248, 113, 113, 0.2)',
                     color: isYes ? '#4ade80' : '#f87171',
-                    fontSize: '24px',
+                    fontSize: '28px',
                     fontWeight: 700,
                   }}
                 >
@@ -232,13 +200,13 @@ export async function GET(request: NextRequest) {
               </div>
             </div>
 
-            {/* Right side - Financials */}
+            {/* Right side - 40% - Financials */}
             <div
               style={{
                 display: 'flex',
                 flexDirection: 'column',
-                width: '400px',
-                padding: '40px',
+                width: '40%',
+                padding: '36px',
                 borderLeft: '1px solid rgba(255, 255, 255, 0.1)',
                 justifyContent: 'center',
                 alignItems: 'flex-end',
@@ -246,11 +214,7 @@ export async function GET(request: NextRequest) {
               }}
             >
               {/* Bet Amount */}
-              <div
-                style={{
-                  marginBottom: '30px',
-                }}
-              >
+              <div style={{ marginBottom: '24px', width: '100%', textAlign: 'right' }}>
                 <div
                   style={{
                     fontSize: '14px',
@@ -262,13 +226,7 @@ export async function GET(request: NextRequest) {
                 >
                   Bet Amount
                 </div>
-                <div
-                  style={{
-                    fontSize: '42px',
-                    fontWeight: 700,
-                    color: '#ffffff',
-                  }}
-                >
+                <div style={{ fontSize: '40px', fontWeight: 700, color: '#ffffff' }}>
                   {formatCurrency(betAmount)}
                 </div>
               </div>
@@ -295,7 +253,7 @@ export async function GET(request: NextRequest) {
                 </div>
                 <div
                   style={{
-                    fontSize: '56px',
+                    fontSize: '52px',
                     fontWeight: 900,
                     background: payoutGradient,
                     backgroundClip: 'text',
@@ -305,36 +263,24 @@ export async function GET(request: NextRequest) {
                 >
                   {formatCurrency(potentialPayout)}
                 </div>
-                <div
-                  style={{
-                    fontSize: '18px',
-                    color: 'rgba(255,255,255,0.4)',
-                    marginTop: '12px',
-                  }}
-                >
+                <div style={{ fontSize: '18px', color: 'rgba(255,255,255,0.4)', marginTop: '12px' }}>
                   {multiplier}x return
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Footer */}
+          {/* Footer with CTA */}
           <div
             style={{
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
               marginTop: '20px',
-              paddingTop: '20px',
             }}
           >
-            <div
-              style={{
-                fontSize: '16px',
-                color: 'rgba(255,255,255,0.3)',
-              }}
-            >
-              polywave.trade
+            <div style={{ fontSize: '18px', color: 'rgba(255,255,255,0.5)' }}>
+              Track whale trades at polywave.trade
             </div>
             <div
               style={{
@@ -353,7 +299,7 @@ export async function GET(request: NextRequest) {
       }
     );
   } catch (e: unknown) {
-    console.error(`Error generating OG image: ${e}`);
-    return new Response('Failed to generate OG image', { status: 500 });
+    console.error('Error generating OG image:', e);
+    return new Response(`Failed to generate OG image: ${e}`, { status: 500 });
   }
 }

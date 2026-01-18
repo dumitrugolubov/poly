@@ -72,6 +72,7 @@ export default function WhaleCard({ trade, onDownload }: WhaleCardProps) {
         outcome: trade.outcome,
         traderName: trade.traderName || '',
         traderAddress: trade.traderAddress,
+        eventImage: trade.eventImage || '',
       });
 
       // Use /trade/[id] route for proper OG meta tags
@@ -99,8 +100,8 @@ export default function WhaleCard({ trade, onDownload }: WhaleCardProps) {
           'md:flex-row md:p-8 md:gap-8 md:min-h-[280px]'
         )}
       >
-        {/* LEFT COLUMN (55% on desktop) - Content */}
-        <div className="flex-1 md:w-[55%] flex flex-col justify-between">
+        {/* LEFT COLUMN (60% on desktop) - Content */}
+        <div className="flex-1 md:w-[60%] flex flex-col justify-between">
           {/* Trader Info - Clickable */}
           <a
             href={traderProfileUrl}
@@ -199,12 +200,12 @@ export default function WhaleCard({ trade, onDownload }: WhaleCardProps) {
           </div>
         </div>
 
-        {/* RIGHT COLUMN (45% on desktop) - Financials - Clickable */}
+        {/* RIGHT COLUMN (40% on desktop) - Financials - Clickable */}
         <a
           href={traderMarketActivityUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="md:w-[45%] flex flex-col justify-center items-end text-right border-t md:border-t-0 md:border-l border-white/10 pt-6 md:pt-0 md:pl-6 hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
+          className="md:w-[40%] flex flex-col justify-center items-end text-right border-t md:border-t-0 md:border-l border-white/10 pt-6 md:pt-0 md:pl-6 hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
         >
           {/* Bet Amount */}
           <div className="mb-4 w-full">

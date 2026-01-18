@@ -38,6 +38,7 @@ export default function Feed() {
         outcome: trade.outcome,
         traderName: trade.traderName || '',
         traderAddress: trade.traderAddress,
+        eventImage: trade.eventImage || '',
       });
 
       const imageUrl = `/api/og?${params.toString()}`;

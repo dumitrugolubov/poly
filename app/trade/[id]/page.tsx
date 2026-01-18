@@ -10,6 +10,7 @@ interface PageProps {
     outcome?: string;
     traderName?: string;
     traderAddress?: string;
+    eventImage?: string;
   }>;
 }
 
@@ -22,6 +23,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
   const outcome = params.outcome || 'Yes';
   const traderName = params.traderName || '';
   const traderAddress = params.traderAddress || '';
+  const eventImage = params.eventImage || '';
 
   const baseUrl = 'https://polywave.trade';
 
@@ -33,6 +35,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
     outcome,
     traderName,
     traderAddress,
+    eventImage,
   });
 
   const ogImageUrl = `${baseUrl}/api/og?${ogParams.toString()}`;
@@ -45,8 +48,13 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
     return `$${num.toLocaleString()}`;
   };
 
-  const title = `🐋 ${formatAmount(betAmount)} Whale Bet on "${question.slice(0, 50)}${question.length > 50 ? '...' : ''}"`;
-  const description = `${traderName || 'A whale'} bet ${formatAmount(betAmount)} on ${outcome} with potential payout of ${formatAmount(potentialPayout)}. Track whale trades on Polywave.`;
+  const multiplier = (parseFloat(potentialPayout) / parseFloat(betAmount)).toFixed(1);
+
+  // Longer, more engaging title (50-60 chars optimal)
+  const title = `🐋 Whale Alert: ${formatAmount(betAmount)} bet on "${question.slice(0, 40)}${question.length > 40 ? '...' : ''}"`;
+
+  // Longer description (110-160 chars optimal)
+  const description = `${traderName || 'A whale trader'} placed a ${formatAmount(betAmount)} bet on "${outcome}" with a potential ${formatAmount(potentialPayout)} payout (${multiplier}x). Track more whale trades on Polywave!`;
 
   return {
     title,
@@ -63,13 +71,14 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
         },
       ],
       type: 'website',
-      siteName: 'Polywave',
+      siteName: 'Polywave - Whale Tracker',
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
       images: [ogImageUrl],
+      creator: '@polywave',
     },
   };
 }
