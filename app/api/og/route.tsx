@@ -63,6 +63,7 @@ export async function GET(request: NextRequest) {
         <div
           style={{
             display: 'flex',
+            flexDirection: 'row',
             flex: 1,
             backgroundColor: 'rgba(30, 30, 30, 0.8)',
             borderRadius: 24,
@@ -133,7 +134,7 @@ export async function GET(request: NextRequest) {
             }}
           >
             {/* Bet */}
-            <div style={{ marginBottom: 28, textAlign: 'right' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 28, textAlign: 'right', alignItems: 'flex-end' }}>
               <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>
                 Bet Amount
               </div>
@@ -143,7 +144,7 @@ export async function GET(request: NextRequest) {
             </div>
 
             {/* Payout */}
-            <div style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 14, padding: 20, textAlign: 'right' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 14, padding: 20, textAlign: 'right' }}>
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>
                 Potential Payout
               </div>
