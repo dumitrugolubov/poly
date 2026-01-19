@@ -94,7 +94,9 @@ export async function GET(request: Request) {
 
     return NextResponse.json(sortedWhaleTrades, {
       headers: {
-        'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+        // Minimal caching to ensure fresh data after deployments
+        // Cache for 10 seconds max, then must revalidate
+        'Cache-Control': 'public, max-age=10, must-revalidate',
       },
     });
   } catch (error) {

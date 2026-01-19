@@ -42,7 +42,9 @@ export async function fetchWhaleTrades(minAmount: number = 2500): Promise<WhaleT
     console.log('🔍 Fetching real whale trades from Polymarket API...');
 
     // Use our own API route to proxy requests (avoids CORS issues)
-    const response = await fetch(`/api/trades?limit=500&minAmount=${minAmount}`, {
+    // Add timestamp to prevent any browser/CDN caching
+    const timestamp = Date.now();
+    const response = await fetch(`/api/trades?limit=500&minAmount=${minAmount}&_t=${timestamp}`, {
       cache: 'no-store', // Always get fresh data
     });
 
