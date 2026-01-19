@@ -9,7 +9,8 @@ interface PolymarketTrade {
   side: 'BUY' | 'SELL';
   asset: string;
   conditionId: string;
-  size: number; // Amount in USDC
+  size: number; // Number of shares
+  usdcSize?: number; // Amount in USDC (if provided by API)
   price: number; // Price per share (0-1)
   timestamp: number; // Unix timestamp in seconds
   title: string;
@@ -28,10 +29,10 @@ interface PolymarketTrade {
 
 /**
  * Fetch whale trades from Polymarket Data API via our proxy
- * @param minAmount Minimum trade amount in USDC to be considered a whale trade
+ * @param minAmount Minimum trade amount in USDC to be considered a whale trade (default: $2500)
  * @returns Array of whale trades
  */
-export async function fetchWhaleTrades(minAmount: number = 1000): Promise<WhaleTrade[]> {
+export async function fetchWhaleTrades(minAmount: number = 2500): Promise<WhaleTrade[]> {
   if (!USE_REAL_API) {
     console.log('📊 Using mock whale trades data (USE_REAL_API=false)');
     return getMockWhaleTrades();
@@ -41,7 +42,9 @@ export async function fetchWhaleTrades(minAmount: number = 1000): Promise<WhaleT
     console.log('🔍 Fetching real whale trades from Polymarket API...');
 
     // Use our own API route to proxy requests (avoids CORS issues)
-    const response = await fetch(`/api/trades?limit=500&minAmount=${minAmount}`, {
+    // Add timestamp to prevent any browser/CDN caching
+    const timestamp = Date.now();
+    const response = await fetch(`/api/trades?limit=500&minAmount=${minAmount}&_t=${timestamp}`, {
       cache: 'no-store', // Always get fresh data
     });
 
@@ -59,11 +62,30 @@ export async function fetchWhaleTrades(minAmount: number = 1000): Promise<WhaleT
     console.log(`✅ Found ${trades.length} whale trades (>= $${minAmount})`);
 
     // Transform to our WhaleTrade format
-    const enrichedTrades: WhaleTrade[] = trades.map((trade) => {
-      // Calculate potential payout based on price
-      // If price is 0.40, and you buy $1000 worth, you get 2500 shares
-      // If you win, payout is 2500 * 1.00 = $2500
-      const shares = trade.size / trade.price;
+    const enrichedTrades: WhaleTrade[] = trades.map((trade, index) => {
+      // Calculate bet amount and shares correctly
+      // size = number of shares purchased
+      // usdcSize = amount spent in USDC (if provided by API)
+      // price = price per share (0-1)
+
+      const shares = trade.size; // size is the number of shares
+      const betAmount = trade.usdcSize || (trade.size * trade.price); // Use usdcSize if available, otherwise calculate
+
+      // DEBUG: Log first trade to see actual values
+      if (index === 0) {
+        console.log('🔍 DEBUG First Trade from API:', {
+          size: trade.size,
+          price: trade.price,
+          usdcSize: trade.usdcSize,
+          calculated: trade.size * trade.price,
+          betAmount: betAmount,
+          shares: shares,
+        });
+      }
+
+      // Calculate potential payout based on shares
+      // Each winning share is worth $1
+      // Example: 2500 shares × $1.00 = $2500 potential payout
       const potentialPayout = shares; // Each winning share is worth $1
 
       // Normalize outcome to Yes/No
@@ -76,7 +98,7 @@ export async function fetchWhaleTrades(minAmount: number = 1000): Promise<WhaleT
       return {
         id: trade.transactionHash || `${trade.proxyWallet}-${trade.timestamp}`,
         question: trade.title,
-        betAmount: trade.size,
+        betAmount: betAmount,
         outcome,
         potentialPayout: Math.round(potentialPayout * 100) / 100,
         traderAddress: trade.proxyWallet,
