@@ -25,12 +25,18 @@ export async function GET(request: Request) {
     console.log(`Fetched ${trades.length} trades from Polymarket`);
 
     // Filter for whale trades (large amounts) and BUY orders only
-    // Sort by size descending to show biggest trades first
+    // Note: size = number of shares, usdcSize = amount in USDC
+    // Sort by USDC amount descending to show biggest trades first
     const whaleTrades = trades
-      .filter((trade: { size: number; side: string }) =>
-        trade.size >= minAmount && trade.side === 'BUY'
-      )
-      .sort((a: { size: number }, b: { size: number }) => b.size - a.size)
+      .filter((trade: { size: number; usdcSize?: number; price: number; side: string }) => {
+        const usdcAmount = trade.usdcSize || (trade.size * trade.price);
+        return usdcAmount >= minAmount && trade.side === 'BUY';
+      })
+      .sort((a: { size: number; usdcSize?: number; price: number }, b: { size: number; usdcSize?: number; price: number }) => {
+        const aAmount = a.usdcSize || (a.size * a.price);
+        const bAmount = b.usdcSize || (b.size * b.price);
+        return bAmount - aAmount;
+      })
       .slice(0, 20);
 
     return NextResponse.json(whaleTrades, {

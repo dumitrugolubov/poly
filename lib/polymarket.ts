@@ -9,7 +9,8 @@ interface PolymarketTrade {
   side: 'BUY' | 'SELL';
   asset: string;
   conditionId: string;
-  size: number; // Amount in USDC
+  size: number; // Number of shares
+  usdcSize?: number; // Amount in USDC (if provided by API)
   price: number; // Price per share (0-1)
   timestamp: number; // Unix timestamp in seconds
   title: string;
@@ -60,10 +61,17 @@ export async function fetchWhaleTrades(minAmount: number = 1000): Promise<WhaleT
 
     // Transform to our WhaleTrade format
     const enrichedTrades: WhaleTrade[] = trades.map((trade) => {
-      // Calculate potential payout based on price
-      // If price is 0.40, and you buy $1000 worth, you get 2500 shares
-      // If you win, payout is 2500 * 1.00 = $2500
-      const shares = trade.size / trade.price;
+      // Calculate bet amount and shares correctly
+      // size = number of shares purchased
+      // usdcSize = amount spent in USDC (if provided by API)
+      // price = price per share (0-1)
+
+      const shares = trade.size; // size is the number of shares
+      const betAmount = trade.usdcSize || (trade.size * trade.price); // Use usdcSize if available, otherwise calculate
+
+      // Calculate potential payout based on shares
+      // Each winning share is worth $1
+      // Example: 2500 shares × $1.00 = $2500 potential payout
       const potentialPayout = shares; // Each winning share is worth $1
 
       // Normalize outcome to Yes/No
@@ -76,7 +84,7 @@ export async function fetchWhaleTrades(minAmount: number = 1000): Promise<WhaleT
       return {
         id: trade.transactionHash || `${trade.proxyWallet}-${trade.timestamp}`,
         question: trade.title,
-        betAmount: trade.size,
+        betAmount: betAmount,
         outcome,
         potentialPayout: Math.round(potentialPayout * 100) / 100,
         traderAddress: trade.proxyWallet,
