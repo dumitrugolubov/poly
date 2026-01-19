@@ -62,7 +62,7 @@ export async function fetchWhaleTrades(minAmount: number = 2500): Promise<WhaleT
     console.log(`✅ Found ${trades.length} whale trades (>= $${minAmount})`);
 
     // Transform to our WhaleTrade format
-    const enrichedTrades: WhaleTrade[] = trades.map((trade) => {
+    const enrichedTrades: WhaleTrade[] = trades.map((trade, index) => {
       // Calculate bet amount and shares correctly
       // size = number of shares purchased
       // usdcSize = amount spent in USDC (if provided by API)
@@ -70,6 +70,18 @@ export async function fetchWhaleTrades(minAmount: number = 2500): Promise<WhaleT
 
       const shares = trade.size; // size is the number of shares
       const betAmount = trade.usdcSize || (trade.size * trade.price); // Use usdcSize if available, otherwise calculate
+
+      // DEBUG: Log first trade to see actual values
+      if (index === 0) {
+        console.log('🔍 DEBUG First Trade from API:', {
+          size: trade.size,
+          price: trade.price,
+          usdcSize: trade.usdcSize,
+          calculated: trade.size * trade.price,
+          betAmount: betAmount,
+          shares: shares,
+        });
+      }
 
       // Calculate potential payout based on shares
       // Each winning share is worth $1

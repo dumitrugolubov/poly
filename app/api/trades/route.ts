@@ -32,6 +32,19 @@ export async function GET(request: Request) {
     const trades = await response.json();
     console.log(`Fetched ${trades.length} trades from Polymarket`);
 
+    // DEBUG: Log first trade raw data to see actual API response
+    if (trades.length > 0) {
+      const firstTrade = trades[0];
+      console.log('🔍 DEBUG First Raw Trade - ALL FIELDS:', JSON.stringify(firstTrade, null, 2).substring(0, 1000));
+      console.log('🔍 DEBUG Calculation:', {
+        size: firstTrade.size,
+        price: firstTrade.price,
+        usdcSize: firstTrade.usdcSize,
+        'size * price': firstTrade.size * firstTrade.price,
+        'usdcSize || (size * price)': firstTrade.usdcSize || (firstTrade.size * firstTrade.price),
+      });
+    }
+
     // Current timestamp for cache cleanup
     const now = Date.now();
     const cutoffTime = now - CACHE_RETENTION_MS;
