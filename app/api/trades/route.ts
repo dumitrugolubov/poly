@@ -8,7 +8,7 @@ const tradeCache = new Map<string, any>();
 
 // Cache configuration
 const CACHE_RETENTION_MS = 24 * 60 * 60 * 1000; // 24 hours
-const DEFAULT_MIN_AMOUNT = 2500; // Increased from 1000 to 2500 for whale trades only
+const DEFAULT_MIN_AMOUNT = 1000; // Temporarily lowered to see real data and debug
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -67,15 +67,24 @@ export async function GET(request: Request) {
 
     // Add new whale trades to cache (deduplicated by transaction hash)
     let newTradesCount = 0;
+    let skippedBelowMin = 0;
+    let skippedNotBuy = 0;
+
     for (const trade of trades) {
       // Skip if not a BUY order
-      if (trade.side !== 'BUY') continue;
+      if (trade.side !== 'BUY') {
+        skippedNotBuy++;
+        continue;
+      }
 
       // Calculate USDC amount
       const usdcAmount = trade.usdcSize || (trade.size * trade.price);
 
       // Skip if below minimum amount
-      if (usdcAmount < minAmount) continue;
+      if (usdcAmount < minAmount) {
+        skippedBelowMin++;
+        continue;
+      }
 
       // Use transaction hash as unique identifier
       const tradeHash = trade.transactionHash || `${trade.proxyWallet}-${trade.timestamp}`;
@@ -88,6 +97,7 @@ export async function GET(request: Request) {
     }
 
     console.log(`📊 Cache stats: ${newTradesCount} new trades added, ${tradeCache.size} total in cache`);
+    console.log(`📊 Filtering: ${skippedNotBuy} SELL orders skipped, ${skippedBelowMin} below $${minAmount} skipped`);
 
     // Get all cached trades, filter by minAmount, and sort by USDC amount
     const cachedTrades = Array.from(tradeCache.values());
