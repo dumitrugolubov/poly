@@ -36,17 +36,20 @@ export async function GET(request: Request) {
     const now = Date.now();
     const cutoffTime = now - CACHE_RETENTION_MS;
 
-    // Clean up old trades (older than 24 hours)
+    // Clean up old trades (older than 24 hours or below minimum amount)
     let removedCount = 0;
     for (const [hash, trade] of tradeCache.entries()) {
       const tradeTimestamp = trade.timestamp * 1000; // Convert to milliseconds
-      if (tradeTimestamp < cutoffTime) {
+      const tradeAmount = trade.usdcSize || (trade.size * trade.price);
+
+      // Remove if too old OR below current minimum amount
+      if (tradeTimestamp < cutoffTime || tradeAmount < minAmount) {
         tradeCache.delete(hash);
         removedCount++;
       }
     }
     if (removedCount > 0) {
-      console.log(`🧹 Removed ${removedCount} trades older than 24 hours`);
+      console.log(`🧹 Removed ${removedCount} old/small trades (keeping only >= $${minAmount} from last 24h)`);
     }
 
     // Add new whale trades to cache (deduplicated by transaction hash)
@@ -73,9 +76,13 @@ export async function GET(request: Request) {
 
     console.log(`📊 Cache stats: ${newTradesCount} new trades added, ${tradeCache.size} total in cache`);
 
-    // Get all cached trades and sort by USDC amount
+    // Get all cached trades, filter by minAmount, and sort by USDC amount
     const cachedTrades = Array.from(tradeCache.values());
     const sortedWhaleTrades = cachedTrades
+      .filter((trade: { size: number; usdcSize?: number; price: number }) => {
+        const tradeAmount = trade.usdcSize || (trade.size * trade.price);
+        return tradeAmount >= minAmount;
+      })
       .sort((a: { size: number; usdcSize?: number; price: number }, b: { size: number; usdcSize?: number; price: number }) => {
         const aAmount = a.usdcSize || (a.size * a.price);
         const bAmount = b.usdcSize || (b.size * b.price);
