@@ -40,15 +40,21 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
 
   const ogImageUrl = `${baseUrl}/api/og?${ogParams.toString()}`;
 
-  // Format amounts for description
+  // Format amounts for description (with safety checks)
   const formatAmount = (val: string) => {
     const num = parseFloat(val);
+    if (!isFinite(num) || num <= 0) return '$0';
     if (num >= 1000000) return `$${(num / 1000000).toFixed(1)}M`;
     if (num >= 1000) return `$${Math.round(num / 1000)}K`;
     return `$${num.toLocaleString()}`;
   };
 
-  const multiplier = (parseFloat(potentialPayout) / parseFloat(betAmount)).toFixed(1);
+  // Safe multiplier calculation (avoid division by zero)
+  const betAmountNum = parseFloat(betAmount);
+  const payoutNum = parseFloat(potentialPayout);
+  const multiplier = (betAmountNum > 0 && isFinite(betAmountNum) && isFinite(payoutNum))
+    ? (payoutNum / betAmountNum).toFixed(1)
+    : '0.0';
 
   const title = `Whale Alert: ${formatAmount(betAmount)} bet on "${question.slice(0, 40)}${question.length > 40 ? '...' : ''}"`;
   const description = `${traderName || 'A whale trader'} placed a ${formatAmount(betAmount)} bet on "${outcome}" with a potential ${formatAmount(potentialPayout)} payout (${multiplier}x). Track more whale trades on Polywave!`;

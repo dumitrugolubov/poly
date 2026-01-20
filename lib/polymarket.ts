@@ -34,18 +34,15 @@ interface PolymarketTrade {
  */
 export async function fetchWhaleTrades(minAmount: number = 500): Promise<WhaleTrade[]> {
   if (!USE_REAL_API) {
-    console.log('📊 Using mock whale trades data (USE_REAL_API=false)');
     return getMockWhaleTrades();
   }
 
   try {
-    console.log('🔍 Fetching real whale trades from Polymarket API...');
-
     // Use our own API route to proxy requests (avoids CORS issues)
     // Add timestamp to prevent any browser/CDN caching
     const timestamp = Date.now();
     const response = await fetch(`/api/trades?limit=500&minAmount=${minAmount}&_t=${timestamp}`, {
-      cache: 'no-store', // Always get fresh data
+      cache: 'no-store',
     });
 
     if (!response.ok) {
@@ -54,34 +51,18 @@ export async function fetchWhaleTrades(minAmount: number = 500): Promise<WhaleTr
 
     const trades: PolymarketTrade[] = await response.json();
 
-    // Check if we got an error response
-    if ('error' in trades) {
-      throw new Error('API returned an error');
+    // Check if we got an error response or invalid data
+    if (!Array.isArray(trades)) {
+      throw new Error('API returned invalid data');
     }
 
-    console.log(`✅ Found ${trades.length} whale trades (>= $${minAmount})`);
-
     // Transform to our WhaleTrade format
-    const enrichedTrades: WhaleTrade[] = trades.map((trade, index) => {
-      // Calculate bet amount and shares correctly
+    const enrichedTrades: WhaleTrade[] = trades.map((trade) => {
       // size = number of shares purchased
       // usdcSize = amount spent in USDC (if provided by API)
       // price = price per share (0-1)
-
-      const shares = trade.size; // size is the number of shares
-      const betAmount = trade.usdcSize || (trade.size * trade.price); // Use usdcSize if available, otherwise calculate
-
-      // DEBUG: Log first trade to see actual values
-      if (index === 0) {
-        console.log('🔍 DEBUG First Trade from API:', {
-          size: trade.size,
-          price: trade.price,
-          usdcSize: trade.usdcSize,
-          calculated: trade.size * trade.price,
-          betAmount: betAmount,
-          shares: shares,
-        });
-      }
+      const shares = trade.size;
+      const betAmount = trade.usdcSize || (trade.size * trade.price);
 
       // Calculate potential payout based on shares
       // Each winning share is worth $1
@@ -116,15 +97,14 @@ export async function fetchWhaleTrades(minAmount: number = 500): Promise<WhaleTr
       };
     });
 
-    // If no whale trades found, return mock data
+    // If no whale trades found, return mock data as fallback
     if (enrichedTrades.length === 0) {
-      console.log('⚠️ No whale trades found, using mock data');
       return getMockWhaleTrades();
     }
 
     return enrichedTrades;
-  } catch (error) {
-    console.warn('⚠️ Failed to fetch from Polymarket API, using mock data:', error instanceof Error ? error.message : 'Unknown error');
+  } catch {
+    // Return mock data on any error
     return getMockWhaleTrades();
   }
 }

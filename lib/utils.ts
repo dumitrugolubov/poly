@@ -35,3 +35,43 @@ export function formatTimestamp(timestamp: number): string {
 export function getIdenticonUrl(address: string): string {
   return `https://api.dicebear.com/7.x/identicon/svg?seed=${address}`;
 }
+
+/**
+ * Safely calculate multiplier avoiding division by zero
+ */
+export function calculateMultiplier(potentialPayout: number, betAmount: number): string {
+  if (!betAmount || betAmount <= 0 || !isFinite(betAmount)) {
+    return '0.0';
+  }
+  if (!potentialPayout || !isFinite(potentialPayout)) {
+    return '0.0';
+  }
+  const multiplier = potentialPayout / betAmount;
+  return isFinite(multiplier) ? multiplier.toFixed(1) : '0.0';
+}
+
+/**
+ * Safely parse a number from string, returning default if invalid
+ */
+export function safeParseFloat(value: string | undefined | null, defaultValue: number = 0): number {
+  if (!value) return defaultValue;
+  const parsed = parseFloat(value);
+  return isFinite(parsed) ? parsed : defaultValue;
+}
+
+/**
+ * Validate outcome is Yes or No
+ */
+export function isValidOutcome(value: string | undefined | null): value is 'Yes' | 'No' {
+  return value === 'Yes' || value === 'No';
+}
+
+/**
+ * Format amount for display (e.g., $5K, $1.2M)
+ */
+export function formatCompactCurrency(value: number): string {
+  if (!isFinite(value) || value <= 0) return '$0';
+  if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+  if (value >= 1000) return `$${Math.round(value / 1000)}K`;
+  return `$${value.toLocaleString()}`;
+}

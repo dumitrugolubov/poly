@@ -1,10 +1,12 @@
 'use client';
 
 import { WhaleTrade } from '@/lib/types';
+import { useDownload } from '@/hooks/useDownload';
+import { safeParseFloat, isValidOutcome } from '@/lib/utils';
 import WhaleCard from '@/components/WhaleCard';
 import Header from '@/components/Header';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, AlertCircle } from 'lucide-react';
 
 interface TradeViewProps {
   tradeId: string;
@@ -27,47 +29,20 @@ export default function TradeRedirect({
   traderAddress,
   eventImage,
 }: TradeViewProps) {
-  // Construct trade object from URL params
+  const { downloadTradeImage, downloading, error: downloadError } = useDownload();
+
+  // Construct trade object from URL params with safe parsing
   const trade: WhaleTrade = {
     id: tradeId,
     question: question || 'Whale Trade on Polymarket',
-    betAmount: parseFloat(betAmount || '0'),
-    potentialPayout: parseFloat(potentialPayout || '0'),
-    outcome: (outcome as 'Yes' | 'No') || 'Yes',
+    betAmount: safeParseFloat(betAmount, 0),
+    potentialPayout: safeParseFloat(potentialPayout, 0),
+    outcome: isValidOutcome(outcome) ? outcome : 'Yes',
     traderName: traderName || undefined,
     traderAddress: traderAddress || '',
     eventImage: eventImage || undefined,
     timestamp: Math.floor(Date.now() / 1000),
     marketId: tradeId,
-  };
-
-  // Download handler (same as Feed.tsx)
-  const handleDownload = async (trade: WhaleTrade) => {
-    try {
-      const params = new URLSearchParams({
-        question: trade.question,
-        betAmount: trade.betAmount.toString(),
-        potentialPayout: trade.potentialPayout.toString(),
-        outcome: trade.outcome,
-        traderName: trade.traderName || '',
-        traderAddress: trade.traderAddress,
-        eventImage: trade.eventImage || '',
-      });
-
-      const imageUrl = `/api/og?${params.toString()}`;
-      const response = await fetch(imageUrl);
-      if (!response.ok) throw new Error('Failed to generate image');
-
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.download = `polywave-whale-${trade.id.slice(0, 8)}-${Date.now()}.png`;
-      link.href = url;
-      link.click();
-      setTimeout(() => URL.revokeObjectURL(url), 100);
-    } catch (error) {
-      console.error('Error generating image:', error);
-    }
   };
 
   return (
@@ -85,8 +60,20 @@ export default function TradeRedirect({
             <span>View all whale trades</span>
           </Link>
 
+          {/* Download error toast */}
+          {downloadError && (
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+              <span className="text-red-200 text-sm">Failed to download image: {downloadError}</span>
+            </div>
+          )}
+
           {/* Trade card */}
-          <WhaleCard trade={trade} onDownload={handleDownload} />
+          <WhaleCard
+            trade={trade}
+            onDownload={downloadTradeImage}
+            isDownloading={downloading}
+          />
 
           {/* CTA */}
           <div className="mt-8 text-center">

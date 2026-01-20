@@ -1,70 +1,72 @@
 'use client';
 
+import { memo, useState, useMemo, useCallback } from 'react';
 import { WhaleTrade } from '@/lib/types';
-import { formatCurrency, formatTimestamp, shortenAddress, getIdenticonUrl, cn } from '@/lib/utils';
-import { Download, TrendingUp, Twitter, Link2, Check, ExternalLink } from 'lucide-react';
+import { formatCurrency, formatTimestamp, shortenAddress, getIdenticonUrl, cn, calculateMultiplier } from '@/lib/utils';
+import { Download, TrendingUp, Twitter, Link2, Check, ExternalLink, Loader2 } from 'lucide-react';
 import Image from 'next/image';
-import { useState } from 'react';
 
 interface WhaleCardProps {
   trade: WhaleTrade;
   onDownload: (trade: WhaleTrade) => void;
+  isDownloading?: boolean;
 }
 
-export default function WhaleCard({ trade, onDownload }: WhaleCardProps) {
+const WhaleCard = memo(function WhaleCard({ trade, onDownload, isDownloading = false }: WhaleCardProps) {
   const [copied, setCopied] = useState(false);
 
-  const getOutcomeColor = () => {
+  // Memoized calculations
+  const outcomeColor = useMemo(() => {
     if (trade.outcome === 'Yes') return 'text-green-400';
     if (trade.outcome === 'No') return 'text-red-400';
     return 'text-yellow-400';
-  };
+  }, [trade.outcome]);
 
-  const getPayoutGradient = () => {
-    const multiplier = trade.potentialPayout / trade.betAmount;
+  const payoutGradient = useMemo(() => {
+    const multiplier = trade.betAmount > 0 ? trade.potentialPayout / trade.betAmount : 0;
     if (multiplier > 2.5) return 'text-gradient-gold';
     if (trade.outcome === 'Yes') return 'text-gradient-aurora';
     return 'text-gradient-red';
-  };
+  }, [trade.potentialPayout, trade.betAmount, trade.outcome]);
 
-  const getGlowColor = () => {
+  const glowColor = useMemo(() => {
     if (trade.outcome === 'Yes') return 'hover:shadow-green-500/50';
     if (trade.outcome === 'No') return 'hover:shadow-red-500/50';
     return 'hover:shadow-yellow-500/50';
-  };
+  }, [trade.outcome]);
 
-  // Adaptive text size for payout based on formatted string length
-  const getPayoutTextSize = () => {
+  const payoutTextSize = useMemo(() => {
     const formatted = formatCurrency(trade.potentialPayout);
     const length = formatted.length;
+    if (length >= 12) return 'text-lg md:text-xl lg:text-2xl';
+    if (length >= 10) return 'text-xl md:text-2xl lg:text-3xl';
+    if (length >= 8) return 'text-2xl md:text-3xl lg:text-4xl';
+    if (length >= 6) return 'text-3xl md:text-4xl lg:text-5xl';
+    return 'text-4xl md:text-5xl lg:text-6xl';
+  }, [trade.potentialPayout]);
 
-    // Based on character count for better responsiveness
-    if (length >= 12) return 'text-lg md:text-xl lg:text-2xl'; // Very long: $10,000,000+
-    if (length >= 10) return 'text-xl md:text-2xl lg:text-3xl'; // Long: $1,000,000+
-    if (length >= 8) return 'text-2xl md:text-3xl lg:text-4xl'; // Medium: $100,000+
-    if (length >= 6) return 'text-3xl md:text-4xl lg:text-5xl'; // Short: $10,000+
-    return 'text-4xl md:text-5xl lg:text-6xl'; // Very short: < $10,000
-  };
+  const isHighROI = useMemo(() => {
+    return trade.betAmount > 0 && trade.potentialPayout > trade.betAmount * 2;
+  }, [trade.potentialPayout, trade.betAmount]);
 
-  const isPayout = trade.potentialPayout > trade.betAmount * 2;
+  const multiplierDisplay = useMemo(() => {
+    return calculateMultiplier(trade.potentialPayout, trade.betAmount);
+  }, [trade.potentialPayout, trade.betAmount]);
 
-  // Polymarket URLs
-  const marketUrl = trade.eventSlug
-    ? `https://polymarket.com/event/${trade.eventSlug}`
-    : trade.marketSlug
-      ? `https://polymarket.com/event/${trade.marketSlug}`
-      : null;
+  // URLs
+  const marketUrl = useMemo(() => {
+    if (trade.eventSlug) return `https://polymarket.com/event/${trade.eventSlug}`;
+    if (trade.marketSlug) return `https://polymarket.com/event/${trade.marketSlug}`;
+    return null;
+  }, [trade.eventSlug, trade.marketSlug]);
 
   const traderProfileUrl = `https://polymarket.com/profile/${trade.traderAddress}`;
-
-  // URL for trader's activity on this specific market
   const traderMarketActivityUrl = trade.marketSlug
     ? `https://polymarket.com/profile/${trade.traderAddress}?tab=positions`
     : traderProfileUrl;
 
-  const handleCopyLink = async () => {
+  const handleCopyLink = useCallback(async () => {
     try {
-      // Build URL with trade data for OG preview
       const params = new URLSearchParams({
         question: trade.question,
         betAmount: trade.betAmount.toString(),
@@ -75,34 +77,44 @@ export default function WhaleCard({ trade, onDownload }: WhaleCardProps) {
         eventImage: trade.eventImage || '',
       });
 
-      // Use /trade/[id] route for proper OG meta tags
       const url = `${window.location.origin}/trade/${trade.id}?${params.toString()}`;
       await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Failed to copy link:', error);
+      // Fallback for browsers that don't support clipboard API
+      const textArea = document.createElement('textarea');
+      textArea.value = `${window.location.origin}/trade/${trade.id}`;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
-  };
+  }, [trade]);
+
+  const handleDownload = useCallback(() => {
+    if (!isDownloading) {
+      onDownload(trade);
+    }
+  }, [trade, onDownload, isDownloading]);
 
   return (
     <div className="relative group">
-      {/* Horizontal Ticket Card */}
       <div
         id={`whale-card-${trade.id}`}
         className={cn(
           'glassmorphism rounded-xl overflow-hidden transition-all duration-300',
           'hover:scale-[1.01] hover:shadow-2xl',
-          getGlowColor(),
-          // Mobile: Vertical layout
+          glowColor,
           'flex flex-col p-6 gap-4',
-          // Desktop: Horizontal layout (16:9-ish aspect ratio)
           'md:flex-row md:p-8 md:gap-8 md:min-h-[280px]'
         )}
       >
-        {/* LEFT COLUMN (70% on desktop) - Content */}
+        {/* LEFT COLUMN - Content */}
         <div className="flex-1 md:w-[70%] flex flex-col justify-between">
-          {/* Trader Info - Clickable */}
+          {/* Trader Info */}
           <a
             href={traderProfileUrl}
             target="_blank"
@@ -117,7 +129,7 @@ export default function WhaleCard({ trade, onDownload }: WhaleCardProps) {
                 height={56}
                 className="w-full h-full object-cover"
                 unoptimized={!trade.traderProfileImage}
-                              />
+              />
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
@@ -149,7 +161,7 @@ export default function WhaleCard({ trade, onDownload }: WhaleCardProps) {
             </div>
           </a>
 
-          {/* Market Question with Event Image - HERO - Clickable */}
+          {/* Market Question */}
           <a
             href={marketUrl || '#'}
             target="_blank"
@@ -162,7 +174,6 @@ export default function WhaleCard({ trade, onDownload }: WhaleCardProps) {
           >
             {trade.eventImage && (
               <div className="w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gradient-to-br from-purple-500/30 to-blue-500/30">
-                {/* Gradient background for transparent images */}
                 <Image
                   src={trade.eventImage}
                   alt="Event"
@@ -170,11 +181,11 @@ export default function WhaleCard({ trade, onDownload }: WhaleCardProps) {
                   height={80}
                   className="w-full h-full object-cover"
                   unoptimized
-                                  />
+                />
               </div>
             )}
             <div className="flex items-start gap-2">
-              <h3 className="text-xl md:text-2xl lg:text-3xl font-bold text-white leading-tight hover:text-white/90 transition-colors">
+              <h3 className="text-xl md:text-2xl lg:text-3xl font-bold text-white leading-tight hover:text-white/90 transition-colors line-clamp-3">
                 {trade.question}
               </h3>
               {marketUrl && <ExternalLink size={16} className="text-white/40 flex-shrink-0 mt-1" />}
@@ -189,7 +200,7 @@ export default function WhaleCard({ trade, onDownload }: WhaleCardProps) {
             )}>
               {trade.outcome}
             </div>
-            {isPayout && (
+            {isHighROI && (
               <div className="flex items-center gap-1 text-yellow-400 text-sm bg-yellow-500/10 px-3 py-2 rounded-lg">
                 <TrendingUp size={14} />
                 <span className="font-semibold">High ROI</span>
@@ -198,14 +209,13 @@ export default function WhaleCard({ trade, onDownload }: WhaleCardProps) {
           </div>
         </div>
 
-        {/* RIGHT COLUMN (30% on desktop) - Financials - Clickable */}
+        {/* RIGHT COLUMN - Financials */}
         <a
           href={traderMarketActivityUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="md:w-[30%] flex flex-col justify-center items-end text-right border-t md:border-t-0 md:border-l border-white/10 pt-6 md:pt-0 md:pl-4 hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
         >
-          {/* Bet Amount */}
           <div className="mb-4 w-full">
             <p className="text-sm text-white/50 mb-1 uppercase tracking-wider flex items-center justify-end gap-1">
               Bet Amount
@@ -216,41 +226,34 @@ export default function WhaleCard({ trade, onDownload }: WhaleCardProps) {
             </p>
           </div>
 
-          {/* Potential Payout - HERO with adaptive size and expanded width */}
           <div className="w-full bg-gradient-to-br from-white/10 to-white/5 rounded-lg p-4 md:p-5">
             <p className="text-xs md:text-sm text-white/60 mb-1 uppercase tracking-wider">
               Potential Payout
             </p>
-            <p className={cn(
-              'font-black leading-tight',
-              getPayoutTextSize(),
-              getPayoutGradient()
-            )}>
+            <p className={cn('font-black leading-tight', payoutTextSize, payoutGradient)}>
               {formatCurrency(trade.potentialPayout)}
             </p>
             <div className="mt-2 text-sm text-white/40">
-              {(trade.potentialPayout / trade.betAmount).toFixed(2)}x return
+              {multiplierDisplay}x return
             </div>
           </div>
         </a>
 
-        {/* Branding Watermark - Bottom Right (No Debug Labels) */}
+        {/* Branding Watermark */}
         <div className="absolute bottom-4 right-4 opacity-30 text-xs font-mono text-white/60">
           <span className="font-bold tracking-wider">POLYWAVE.TRADE</span>
         </div>
       </div>
 
-      {/* Action Buttons - Appear on hover */}
+      {/* Action Buttons */}
       <div className="absolute top-4 right-4 z-10 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-        {/* Copy Link Button */}
         <button
           onClick={handleCopyLink}
           className={cn(
             'bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700',
             'text-white font-semibold py-2 px-4 rounded-lg',
             'transition-all duration-200 flex items-center gap-2',
-            'shadow-lg hover:shadow-xl',
-            'relative'
+            'shadow-lg hover:shadow-xl'
           )}
           title="Copy link to trade"
         >
@@ -267,21 +270,33 @@ export default function WhaleCard({ trade, onDownload }: WhaleCardProps) {
           )}
         </button>
 
-        {/* Download Button */}
         <button
-          onClick={() => onDownload(trade)}
+          onClick={handleDownload}
+          disabled={isDownloading}
           className={cn(
             'bg-gradient-to-r from-green-500 to-purple-600 hover:from-green-600 hover:to-purple-700',
             'text-white font-semibold py-2 px-4 rounded-lg',
             'transition-all duration-200 flex items-center gap-2',
-            'shadow-lg hover:shadow-xl'
+            'shadow-lg hover:shadow-xl',
+            isDownloading && 'opacity-50 cursor-not-allowed'
           )}
           title="Download as PNG"
         >
-          <Download size={16} />
-          <span className="hidden md:inline">Download</span>
+          {isDownloading ? (
+            <>
+              <Loader2 size={16} className="animate-spin" />
+              <span className="hidden md:inline">Saving...</span>
+            </>
+          ) : (
+            <>
+              <Download size={16} />
+              <span className="hidden md:inline">Download</span>
+            </>
+          )}
         </button>
       </div>
     </div>
   );
-}
+});
+
+export default WhaleCard;
