@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import { redirect } from 'next/navigation';
+import TradeRedirect from './TradeRedirect';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -14,29 +14,29 @@ interface PageProps {
   }>;
 }
 
-export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
-  const params = await searchParams;
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  const query = await searchParams;
 
-  const question = params.question || 'Whale Trade on Polymarket';
-  const betAmount = params.betAmount || '50000';
-  const potentialPayout = params.potentialPayout || '100000';
-  const outcome = params.outcome || 'Yes';
-  const traderName = params.traderName || '';
-  const traderAddress = params.traderAddress || '';
-  const eventImage = params.eventImage || '';
+  const question = query.question || 'Whale Trade on Polymarket';
+  const betAmount = query.betAmount || '50000';
+  const potentialPayout = query.potentialPayout || '100000';
+  const outcome = query.outcome || 'Yes';
+  const traderName = query.traderName || '';
+  const traderAddress = query.traderAddress || '';
+  const eventImage = query.eventImage || '';
 
-  const baseUrl = 'https://www.polywave.trade';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.polywave.trade';
 
   // Build OG image URL with all parameters
-  const ogParams = new URLSearchParams({
-    question,
-    betAmount,
-    potentialPayout,
-    outcome,
-    traderName,
-    traderAddress,
-    eventImage,
-  });
+  const ogParams = new URLSearchParams();
+  ogParams.set('question', question);
+  ogParams.set('betAmount', betAmount);
+  ogParams.set('potentialPayout', potentialPayout);
+  ogParams.set('outcome', outcome);
+  if (traderName) ogParams.set('traderName', traderName);
+  if (traderAddress) ogParams.set('traderAddress', traderAddress);
+  if (eventImage) ogParams.set('eventImage', eventImage);
 
   const ogImageUrl = `${baseUrl}/api/og?${ogParams.toString()}`;
 
@@ -50,10 +50,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 
   const multiplier = (parseFloat(potentialPayout) / parseFloat(betAmount)).toFixed(1);
 
-  // Longer, more engaging title (50-60 chars optimal)
-  const title = `🐋 Whale Alert: ${formatAmount(betAmount)} bet on "${question.slice(0, 40)}${question.length > 40 ? '...' : ''}"`;
-
-  // Longer description (110-160 chars optimal)
+  const title = `Whale Alert: ${formatAmount(betAmount)} bet on "${question.slice(0, 40)}${question.length > 40 ? '...' : ''}"`;
   const description = `${traderName || 'A whale trader'} placed a ${formatAmount(betAmount)} bet on "${outcome}" with a potential ${formatAmount(potentialPayout)} payout (${multiplier}x). Track more whale trades on Polywave!`;
 
   return {
@@ -87,15 +84,15 @@ export default async function TradePage({ params, searchParams }: PageProps) {
   const { id } = await params;
   const query = await searchParams;
 
-  // Build redirect URL back to home with trade highlighted
-  const redirectParams = new URLSearchParams({ trade: id });
-
-  // Pass through all the trade data for potential use
-  if (query.question) redirectParams.set('question', query.question);
-  if (query.betAmount) redirectParams.set('betAmount', query.betAmount);
-  if (query.potentialPayout) redirectParams.set('potentialPayout', query.potentialPayout);
-  if (query.outcome) redirectParams.set('outcome', query.outcome);
-
-  // Redirect to home page - the meta tags will still work for social previews
-  redirect(`/?${redirectParams.toString()}`);
+  // Pass data to client component for redirect
+  // This ensures meta tags are served before any redirect happens
+  return (
+    <TradeRedirect
+      tradeId={id}
+      question={query.question}
+      betAmount={query.betAmount}
+      potentialPayout={query.potentialPayout}
+      outcome={query.outcome}
+    />
+  );
 }
