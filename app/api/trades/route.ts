@@ -80,13 +80,23 @@ export async function GET(request: Request) {
 
     // 2. Get existing accumulated trades from Redis
     let storedTrades: StoredTrade[] = [];
+    let storedTradesCountBefore = 0;
     try {
       const redis = await getRedisClient();
       const data = await redis.get(REDIS_KEY);
       if (data) {
-        storedTrades = JSON.parse(data);
+        const rawStored = JSON.parse(data) as StoredTrade[];
+        storedTradesCountBefore = rawStored.length;
+
+        // Re-filter stored trades by current minAmount threshold
+        // This removes old trades that no longer meet the threshold
+        storedTrades = rawStored.filter((trade) => {
+          const usdcAmount = trade.usdcSize || (trade.size * trade.price);
+          return usdcAmount >= minAmount;
+        });
+
+        console.log(`Retrieved ${storedTradesCountBefore} stored trades, ${storedTrades.length} meet current threshold (>= $${minAmount})`);
       }
-      console.log(`Retrieved ${storedTrades.length} stored trades from Redis`);
     } catch (redisError) {
       console.error('Redis read error (continuing with empty):', redisError);
     }
@@ -94,7 +104,7 @@ export async function GET(request: Request) {
     // 3. Merge new trades with stored trades (dedupe by transactionHash)
     const tradeMap = new Map<string, StoredTrade>();
 
-    // Add stored trades first
+    // Add stored trades first (already filtered by threshold)
     for (const trade of storedTrades) {
       const key = trade.transactionHash || `${trade.proxyWallet}-${trade.timestamp}`;
       tradeMap.set(key, trade);
@@ -111,8 +121,9 @@ export async function GET(request: Request) {
       .sort((a, b) => b.timestamp - a.timestamp)
       .slice(0, MAX_STORED_TRADES);
 
-    // 5. Store back to Redis (only if we have new trades to add)
-    if (newWhaleTrades.length > 0) {
+    // 5. Store back to Redis (always save to persist filtered data)
+    const shouldSave = newWhaleTrades.length > 0 || storedTradesCountBefore !== allTrades.length;
+    if (shouldSave) {
       try {
         const redis = await getRedisClient();
         await redis.set(REDIS_KEY, JSON.stringify(allTrades));
@@ -137,9 +148,14 @@ export async function GET(request: Request) {
       const redis = await getRedisClient();
       const data = await redis.get(REDIS_KEY);
       if (data) {
-        const storedTrades = JSON.parse(data);
-        console.log(`Returning ${storedTrades.length} stored trades (fallback)`);
-        return NextResponse.json(storedTrades, {
+        const rawStored = JSON.parse(data) as StoredTrade[];
+        // Filter stored trades by current threshold
+        const filteredTrades = rawStored.filter((trade) => {
+          const usdcAmount = trade.usdcSize || (trade.size * trade.price);
+          return usdcAmount >= minAmount;
+        });
+        console.log(`Returning ${filteredTrades.length} stored trades (fallback, filtered from ${rawStored.length})`);
+        return NextResponse.json(filteredTrades, {
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
           },
