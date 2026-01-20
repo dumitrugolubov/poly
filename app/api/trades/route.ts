@@ -8,7 +8,7 @@ const tradeCache = new Map<string, any>();
 
 // Cache configuration
 const CACHE_RETENTION_MS = 24 * 60 * 60 * 1000; // 24 hours
-const DEFAULT_MIN_AMOUNT = 2500; // Increased from 1000 to 2500 for whale trades only
+const DEFAULT_MIN_AMOUNT = 1000; // Minimum amount for whale trades
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
