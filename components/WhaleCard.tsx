@@ -66,25 +66,33 @@ const WhaleCard = memo(function WhaleCard({ trade, onDownload, isDownloading = f
     : traderProfileUrl;
 
   const handleCopyLink = useCallback(async () => {
-    try {
-      const params = new URLSearchParams({
+    const shortUrl = `${window.location.origin}/trade/${trade.id}`;
+
+    // Save trade to Redis (fire and forget)
+    fetch(`/api/trade/${trade.id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: trade.id,
         question: trade.question,
-        betAmount: trade.betAmount.toString(),
-        potentialPayout: trade.potentialPayout.toString(),
+        betAmount: trade.betAmount,
+        potentialPayout: trade.potentialPayout,
         outcome: trade.outcome,
         traderName: trade.traderName || '',
         traderAddress: trade.traderAddress,
         eventImage: trade.eventImage || '',
-      });
+        timestamp: trade.timestamp,
+      }),
+    }).catch(() => {}); // Ignore errors, link still works with fallback
 
-      const url = `${window.location.origin}/trade/${trade.id}?${params.toString()}`;
-      await navigator.clipboard.writeText(url);
+    try {
+      await navigator.clipboard.writeText(shortUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
+    } catch {
       // Fallback for browsers that don't support clipboard API
       const textArea = document.createElement('textarea');
-      textArea.value = `${window.location.origin}/trade/${trade.id}`;
+      textArea.value = shortUrl;
       document.body.appendChild(textArea);
       textArea.select();
       document.execCommand('copy');

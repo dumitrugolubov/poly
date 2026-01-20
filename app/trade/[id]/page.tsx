@@ -1,5 +1,18 @@
 import { Metadata } from 'next';
+import { createClient } from 'redis';
 import TradeRedirect from './TradeRedirect';
+
+interface TradeData {
+  id: string;
+  question: string;
+  betAmount: number;
+  potentialPayout: number;
+  outcome: string;
+  traderName?: string;
+  traderAddress: string;
+  eventImage?: string;
+  timestamp?: number;
+}
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -14,17 +27,42 @@ interface PageProps {
   }>;
 }
 
+const TRADE_PREFIX = 'trade:';
+
+async function getTradeFromRedis(id: string): Promise<TradeData | null> {
+  try {
+    const url = process.env.REDIS_URL;
+    if (!url) return null;
+
+    const redis = createClient({ url });
+    await redis.connect();
+    const data = await redis.get(`${TRADE_PREFIX}${id}`);
+    await redis.disconnect();
+
+    if (data) {
+      return JSON.parse(data);
+    }
+  } catch (error) {
+    console.error('Failed to fetch trade from Redis:', error);
+  }
+  return null;
+}
+
 export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const { id } = await params;
   const query = await searchParams;
 
-  const question = query.question || 'Whale Trade on Polymarket';
-  const betAmount = query.betAmount || '50000';
-  const potentialPayout = query.potentialPayout || '100000';
-  const outcome = query.outcome || 'Yes';
-  const traderName = query.traderName || '';
-  const traderAddress = query.traderAddress || '';
-  const eventImage = query.eventImage || '';
+  // Try to get trade from Redis first
+  const redisTrade = await getTradeFromRedis(id);
+
+  // Use Redis data or fall back to query params
+  const question = redisTrade?.question || query.question || 'Whale Trade on Polymarket';
+  const betAmount = redisTrade?.betAmount?.toString() || query.betAmount || '50000';
+  const potentialPayout = redisTrade?.potentialPayout?.toString() || query.potentialPayout || '100000';
+  const outcome = redisTrade?.outcome || query.outcome || 'Yes';
+  const traderName = redisTrade?.traderName || query.traderName || '';
+  const traderAddress = redisTrade?.traderAddress || query.traderAddress || '';
+  const eventImage = redisTrade?.eventImage || query.eventImage || '';
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.polywave.trade';
 
@@ -90,17 +128,20 @@ export default async function TradePage({ params, searchParams }: PageProps) {
   const { id } = await params;
   const query = await searchParams;
 
+  // Try to get trade from Redis first
+  const redisTrade = await getTradeFromRedis(id);
+
   // Show the trade page with full card
   return (
     <TradeRedirect
       tradeId={id}
-      question={query.question}
-      betAmount={query.betAmount}
-      potentialPayout={query.potentialPayout}
-      outcome={query.outcome}
-      traderName={query.traderName}
-      traderAddress={query.traderAddress}
-      eventImage={query.eventImage}
+      question={redisTrade?.question || query.question}
+      betAmount={redisTrade?.betAmount?.toString() || query.betAmount}
+      potentialPayout={redisTrade?.potentialPayout?.toString() || query.potentialPayout}
+      outcome={redisTrade?.outcome || query.outcome}
+      traderName={redisTrade?.traderName || query.traderName}
+      traderAddress={redisTrade?.traderAddress || query.traderAddress}
+      eventImage={redisTrade?.eventImage || query.eventImage}
     />
   );
 }
