@@ -84,8 +84,7 @@ export default async function TradePage({ params, searchParams }: PageProps) {
   const { id } = await params;
   const query = await searchParams;
 
-  // Pass data to client component for redirect
-  // This ensures meta tags are served before any redirect happens
+  // Show the trade page with full card
   return (
     <TradeRedirect
       tradeId={id}
@@ -93,6 +92,9 @@ export default async function TradePage({ params, searchParams }: PageProps) {
       betAmount={query.betAmount}
       potentialPayout={query.potentialPayout}
       outcome={query.outcome}
+      traderName={query.traderName}
+      traderAddress={query.traderAddress}
+      eventImage={query.eventImage}
     />
   );
 }

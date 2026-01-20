@@ -1,15 +1,20 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { WhaleTrade } from '@/lib/types';
+import WhaleCard from '@/components/WhaleCard';
+import Header from '@/components/Header';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 
-interface TradeRedirectProps {
+interface TradeViewProps {
   tradeId: string;
   question?: string;
   betAmount?: string;
   potentialPayout?: string;
   outcome?: string;
+  traderName?: string;
+  traderAddress?: string;
+  eventImage?: string;
 }
 
 export default function TradeRedirect({
@@ -18,26 +23,83 @@ export default function TradeRedirect({
   betAmount,
   potentialPayout,
   outcome,
-}: TradeRedirectProps) {
-  const router = useRouter();
+  traderName,
+  traderAddress,
+  eventImage,
+}: TradeViewProps) {
+  // Construct trade object from URL params
+  const trade: WhaleTrade = {
+    id: tradeId,
+    question: question || 'Whale Trade on Polymarket',
+    betAmount: parseFloat(betAmount || '0'),
+    potentialPayout: parseFloat(potentialPayout || '0'),
+    outcome: (outcome as 'Yes' | 'No') || 'Yes',
+    traderName: traderName || undefined,
+    traderAddress: traderAddress || '',
+    eventImage: eventImage || undefined,
+    timestamp: Math.floor(Date.now() / 1000),
+    marketId: tradeId,
+  };
 
-  useEffect(() => {
-    // Build redirect URL with trade data
-    const params = new URLSearchParams({ trade: tradeId });
-    if (question) params.set('question', question);
-    if (betAmount) params.set('betAmount', betAmount);
-    if (potentialPayout) params.set('potentialPayout', potentialPayout);
-    if (outcome) params.set('outcome', outcome);
+  // Download handler (same as Feed.tsx)
+  const handleDownload = async (trade: WhaleTrade) => {
+    try {
+      const params = new URLSearchParams({
+        question: trade.question,
+        betAmount: trade.betAmount.toString(),
+        potentialPayout: trade.potentialPayout.toString(),
+        outcome: trade.outcome,
+        traderName: trade.traderName || '',
+        traderAddress: trade.traderAddress,
+        eventImage: trade.eventImage || '',
+      });
 
-    // Redirect to home page after a brief moment
-    // This ensures the page with meta tags is fully served first
-    router.replace(`/?${params.toString()}`);
-  }, [tradeId, question, betAmount, potentialPayout, outcome, router]);
+      const imageUrl = `/api/og?${params.toString()}`;
+      const response = await fetch(imageUrl);
+      if (!response.ok) throw new Error('Failed to generate image');
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = `polywave-whale-${trade.id.slice(0, 8)}-${Date.now()}.png`;
+      link.href = url;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+    } catch (error) {
+      console.error('Error generating image:', error);
+    }
+  };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-      <Loader2 className="w-12 h-12 animate-spin text-purple-500" />
-      <p className="text-white/60">Loading trade...</p>
-    </div>
+    <main className="min-h-screen">
+      <Header />
+
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          {/* Back button */}
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-white/60 hover:text-white mb-6 transition-colors"
+          >
+            <ArrowLeft size={20} />
+            <span>View all whale trades</span>
+          </Link>
+
+          {/* Trade card */}
+          <WhaleCard trade={trade} onDownload={handleDownload} />
+
+          {/* CTA */}
+          <div className="mt-8 text-center">
+            <p className="text-white/40 mb-4">Track more whale trades in real-time</p>
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold rounded-lg transition-all"
+            >
+              Explore All Trades
+            </Link>
+          </div>
+        </div>
+      </div>
+    </main>
   );
 }
