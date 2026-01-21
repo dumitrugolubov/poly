@@ -48,7 +48,7 @@ export async function GET(
 
     // Transform positions
     const transformedPositions = positions.map((p: {
-      oddsId: string;
+      oddsId?: string;
       conditionId: string;
       title: string;
       slug: string;
@@ -60,47 +60,47 @@ export async function GET(
       currentValue: number;
       cashPnl: number;
       percentPnl: number;
-    }) => ({
-      id: p.oddsId,
+    }, index: number) => ({
+      id: p.oddsId || `${p.conditionId}-${index}`,
       marketId: p.conditionId,
       marketTitle: p.title,
       marketSlug: p.slug,
       marketImage: p.icon,
       outcome: p.outcome,
-      size: p.curPosition,
-      avgPrice: p.initialPrice,
-      currentPrice: p.curPrice,
-      value: p.currentValue,
-      pnl: p.cashPnl,
-      pnlPercent: p.percentPnl,
+      size: p.curPosition || 0,
+      avgPrice: p.initialPrice || 0,
+      currentPrice: p.curPrice || 0,
+      value: p.currentValue || 0,
+      pnl: p.cashPnl || 0,
+      pnlPercent: p.percentPnl || 0,
     }));
 
     // Transform activity
     const transformedActivity = activity.slice(0, 20).map((a: {
-      oddsId: string;
+      oddsId?: string;
       type: string;
       timestamp: number;
-      title: string;
-      slug: string;
-      outcome: string;
-      side: string;
-      size: number;
-      price: number;
-      cashAmount: number;
-      usdcSize: number;
-      transactionHash: string;
-    }) => ({
-      id: a.oddsId || a.transactionHash,
-      type: a.type,
-      timestamp: a.timestamp,
-      marketTitle: a.title,
-      marketSlug: a.slug,
-      outcome: a.outcome,
-      side: a.side,
-      size: a.size,
-      price: a.price,
+      title?: string;
+      slug?: string;
+      outcome?: string;
+      side?: string;
+      size?: number;
+      price?: number;
+      cashAmount?: number;
+      usdcSize?: number;
+      transactionHash?: string;
+    }, index: number) => ({
+      id: a.oddsId || a.transactionHash || `activity-${index}`,
+      type: a.type || 'TRADE',
+      timestamp: a.timestamp || 0,
+      marketTitle: a.title || 'Unknown Market',
+      marketSlug: a.slug || '',
+      outcome: a.outcome || '',
+      side: a.side || 'BUY',
+      size: a.size || 0,
+      price: a.price || 0,
       usdAmount: a.cashAmount || a.usdcSize || 0,
-      transactionHash: a.transactionHash,
+      transactionHash: a.transactionHash || '',
     }));
 
     return NextResponse.json({

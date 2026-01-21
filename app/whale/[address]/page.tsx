@@ -235,14 +235,14 @@ export default function WhaleProfilePage({ params }: PageProps) {
                     <div className="flex items-center gap-2 mt-1">
                       <span className={cn(
                         'px-2 py-0.5 rounded text-xs font-medium',
-                        position.outcome.toLowerCase() === 'yes'
+                        position.outcome?.toLowerCase() === 'yes'
                           ? 'bg-green-500/20 text-green-400'
                           : 'bg-red-500/20 text-red-400'
                       )}>
-                        {position.outcome}
+                        {position.outcome || 'Unknown'}
                       </span>
                       <span className="text-white/40 text-sm">
-                        {position.size.toFixed(0)} shares @ {(position.avgPrice * 100).toFixed(0)}¢
+                        {(position.size || 0).toFixed(0)} shares @ {((position.avgPrice || 0) * 100).toFixed(0)}¢
                       </span>
                     </div>
                   </div>
@@ -293,17 +293,21 @@ export default function WhaleProfilePage({ params }: PageProps) {
                   <div className="flex-1 min-w-0">
                     <h3 className="text-white font-medium line-clamp-1">{activity.marketTitle}</h3>
                     <div className="flex items-center gap-2 mt-1 text-sm text-white/40">
-                      <span>{activity.type}</span>
+                      <span>{activity.type || 'TRADE'}</span>
                       {activity.outcome && (
                         <>
                           <span>•</span>
-                          <span className={activity.outcome.toLowerCase() === 'yes' ? 'text-green-400' : 'text-red-400'}>
+                          <span className={activity.outcome?.toLowerCase() === 'yes' ? 'text-green-400' : 'text-red-400'}>
                             {activity.outcome}
                           </span>
                         </>
                       )}
-                      <span>•</span>
-                      <span>{formatTimestamp(activity.timestamp)}</span>
+                      {activity.timestamp > 0 && (
+                        <>
+                          <span>•</span>
+                          <span>{formatTimestamp(activity.timestamp)}</span>
+                        </>
+                      )}
                     </div>
                   </div>
                   <div className="text-right">
