@@ -98,7 +98,10 @@ export default function HoldersModal({ marketId, marketTitle, isOpen, onClose }:
               {holders.map((holder, index) => (
                 <Link
                   key={`${holder.address}-${holder.outcome}`}
-                  href={`/whale/${holder.address}`}
+                  href={`/whale/${holder.address}${holder.name || holder.profileImage ? `?${new URLSearchParams({
+                    ...(holder.name && { name: holder.name }),
+                    ...(holder.profileImage && { image: holder.profileImage }),
+                  }).toString()}` : ''}`}
                   onClick={onClose}
                   className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
                 >

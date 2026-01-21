@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, ExternalLink, TrendingUp, TrendingDown, DollarSign, Activity, Wallet, Target } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -13,10 +14,15 @@ interface PageProps {
 }
 
 export default function WhaleProfilePage({ params }: PageProps) {
+  const searchParams = useSearchParams();
   const [address, setAddress] = useState<string | null>(null);
   const [profile, setProfile] = useState<WhaleProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'positions' | 'activity'>('positions');
+
+  // Get name and image from query params (passed from WhaleCard)
+  const queryName = searchParams.get('name') || '';
+  const queryImage = searchParams.get('image') || '';
 
   // Resolve params promise
   useEffect(() => {
@@ -31,6 +37,13 @@ export default function WhaleProfilePage({ params }: PageProps) {
         const res = await fetch(`/api/whale/${address}`);
         if (res.ok) {
           const data = await res.json();
+          // Use query params as fallback if API doesn't return name/image
+          if (!data.name && queryName) {
+            data.name = queryName;
+          }
+          if (!data.profileImage && queryImage) {
+            data.profileImage = queryImage;
+          }
           setProfile(data);
         }
       } catch (error) {
@@ -41,7 +54,7 @@ export default function WhaleProfilePage({ params }: PageProps) {
     }
 
     fetchProfile();
-  }, [address]);
+  }, [address, queryName, queryImage]);
 
   if (loading || !address) {
     return (

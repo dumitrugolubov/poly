@@ -63,7 +63,14 @@ const WhaleCard = memo(function WhaleCard({ trade, onDownload, isDownloading = f
   }, [trade.eventSlug, trade.marketSlug]);
 
   const polymarketProfileUrl = `https://polymarket.com/profile/${trade.traderAddress}`;
-  const internalWhaleUrl = `/whale/${trade.traderAddress}`;
+
+  // Build internal whale URL with name/image params for better UX
+  const whaleParams = new URLSearchParams();
+  if (trade.traderName) whaleParams.set('name', trade.traderName);
+  if (trade.traderProfileImage) whaleParams.set('image', trade.traderProfileImage);
+  const whaleQuery = whaleParams.toString();
+  const internalWhaleUrl = `/whale/${trade.traderAddress}${whaleQuery ? `?${whaleQuery}` : ''}`;
+
   const internalMarketUrl = trade.marketSlug ? `/market/${trade.marketSlug}` : null;
 
   const handleCopyLink = useCallback(async () => {

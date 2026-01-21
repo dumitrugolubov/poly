@@ -2,82 +2,94 @@ import { NextResponse } from 'next/server';
 
 const GAMMA_API = 'https://gamma-api.polymarket.com';
 
+interface GammaEvent {
+  id: string;
+  title: string;
+  slug: string;
+  image: string;
+  icon: string;
+  volume: number;
+  volume24hr: number;
+  liquidity: number;
+  endDate: string;
+  active: boolean;
+  closed: boolean;
+  markets?: {
+    id: string;
+    question: string;
+    conditionId: string;
+    slug: string;
+    outcomePrices: string;
+    outcomes: string;
+    oneDayPriceChange: number;
+  }[];
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const limit = searchParams.get('limit') || '20';
-  const sortBy = searchParams.get('sortBy') || 'volume24hr'; // volume24hr, volume, liquidity
-  const category = searchParams.get('category') || '';
+  const limit = parseInt(searchParams.get('limit') || '30');
+  const sortBy = searchParams.get('sortBy') || 'volume24hr';
 
   try {
-    // Fetch active markets sorted by volume
-    let url = `${GAMMA_API}/markets?limit=${limit}&active=true&closed=false`;
-
-    if (category) {
-      url += `&category=${encodeURIComponent(category)}`;
-    }
-
-    const response = await fetch(url, {
-      headers: {
-        'Accept': 'application/json',
-      },
-      cache: 'no-store',
-    });
+    // Fetch more events to get a good sample, then sort
+    const response = await fetch(
+      `${GAMMA_API}/events?limit=200&active=true&closed=false`,
+      {
+        headers: { 'Accept': 'application/json' },
+        cache: 'no-store',
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`Gamma API error: ${response.status}`);
     }
 
-    const markets = await response.json();
+    const events: GammaEvent[] = await response.json();
 
-    // Sort by specified field
-    const sorted = markets
-      .filter((m: { volumeNum: number }) => m.volumeNum > 0)
-      .sort((a: Record<string, number>, b: Record<string, number>) => {
-        const aVal = a[sortBy] || 0;
-        const bVal = b[sortBy] || 0;
+    // Map sortBy param to event field
+    const sortField = sortBy === 'volumeNum' ? 'volume'
+      : sortBy === 'liquidityNum' ? 'liquidity'
+      : 'volume24hr';
+
+    // Sort by specified field and take top N
+    const sorted = events
+      .filter((e) => e.volume > 0)
+      .sort((a, b) => {
+        const aVal = (a[sortField as keyof GammaEvent] as number) || 0;
+        const bVal = (b[sortField as keyof GammaEvent] as number) || 0;
         return bVal - aVal;
       })
-      .slice(0, parseInt(limit));
+      .slice(0, limit);
 
     // Transform to cleaner format
-    const transformed = sorted.map((m: {
-      id: string;
-      question: string;
-      slug: string;
-      image: string;
-      icon: string;
-      category: string;
-      volumeNum: number;
-      volume24hr: number;
-      liquidityNum: number;
-      outcomePrices: string;
-      outcomes: string;
-      endDate: string;
-      oneDayPriceChange: number;
-      conditionId: string;
-    }) => {
+    const transformed = sorted.map((event) => {
+      // Get the main market from the event (usually first one, or one with highest volume)
+      const mainMarket = event.markets?.[0];
+
       let prices: number[] = [0.5, 0.5];
       let outcomes: string[] = ['Yes', 'No'];
 
-      try {
-        prices = JSON.parse(m.outcomePrices).map((p: string) => parseFloat(p));
-        outcomes = JSON.parse(m.outcomes);
-      } catch {}
+      if (mainMarket) {
+        try {
+          prices = JSON.parse(mainMarket.outcomePrices).map((p: string) => parseFloat(p));
+          outcomes = JSON.parse(mainMarket.outcomes);
+        } catch {}
+      }
 
       return {
-        id: m.id,
-        question: m.question,
-        slug: m.slug,
-        image: m.image || m.icon,
-        category: m.category,
-        volume: m.volumeNum,
-        volume24h: m.volume24hr,
-        liquidity: m.liquidityNum,
+        id: event.id,
+        question: event.title,
+        slug: event.slug,
+        image: event.image || event.icon,
+        category: 'Event',
+        volume: event.volume,
+        volume24h: event.volume24hr,
+        liquidity: event.liquidity,
         outcomes,
         prices,
-        endDate: m.endDate,
-        priceChange24h: m.oneDayPriceChange,
-        conditionId: m.conditionId,
+        endDate: event.endDate,
+        priceChange24h: mainMarket?.oneDayPriceChange || 0,
+        conditionId: mainMarket?.conditionId || '',
       };
     });
 
