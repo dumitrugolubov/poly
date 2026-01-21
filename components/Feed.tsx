@@ -55,7 +55,7 @@ export default function Feed() {
             <Inbox className="w-16 h-16 text-white/30 mb-4" />
             <h2 className="text-xl font-semibold text-white mb-2">No whale trades found</h2>
             <p className="text-white/60 mb-6">
-              No trades over $2,500 in the last batch. Check back soon!
+              No trades over $5,000 in the last batch. Check back soon!
             </p>
             <button
               onClick={refresh}

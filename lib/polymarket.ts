@@ -29,10 +29,10 @@ interface PolymarketTrade {
 
 /**
  * Fetch whale trades from Polymarket Data API via our proxy
- * @param minAmount Minimum trade amount in USDC to be considered a whale trade (default: $2500)
+ * @param minAmount Minimum trade amount in USDC to be considered a whale trade (default: $5000)
  * @returns Array of whale trades
  */
-export async function fetchWhaleTrades(minAmount: number = 2500): Promise<WhaleTrade[]> {
+export async function fetchWhaleTrades(minAmount: number = 5000): Promise<WhaleTrade[]> {
   if (!USE_REAL_API) {
     return getMockWhaleTrades();
   }

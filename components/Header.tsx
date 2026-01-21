@@ -28,7 +28,7 @@ export default function Header() {
 
         <div className="mt-4">
           <p className="text-white/60 text-sm">
-            Track whale trades on Polymarket in real-time. Bets over $2,500.
+            Track whale trades on Polymarket in real-time. Bets over $5,000.
           </p>
         </div>
       </div>

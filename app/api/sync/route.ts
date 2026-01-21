@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from 'redis';
 
 const DATA_API_BASE = 'https://data-api.polymarket.com';
-const MIN_AMOUNT = 2500;
+const MIN_AMOUNT = 5000;
 const MAX_STORED_TRADES = 100;
 const REDIS_KEY = 'whale_trades';
 
