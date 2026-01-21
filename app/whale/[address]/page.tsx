@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, ExternalLink, TrendingUp, TrendingDown, DollarSign, Activity, Wallet, Target } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -13,12 +13,19 @@ interface PageProps {
 }
 
 export default function WhaleProfilePage({ params }: PageProps) {
-  const { address } = use(params);
+  const [address, setAddress] = useState<string | null>(null);
   const [profile, setProfile] = useState<WhaleProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'positions' | 'activity'>('positions');
 
+  // Resolve params promise
   useEffect(() => {
+    params.then((p) => setAddress(p.address));
+  }, [params]);
+
+  useEffect(() => {
+    if (!address) return;
+
     async function fetchProfile() {
       try {
         const res = await fetch(`/api/whale/${address}`);
@@ -36,7 +43,7 @@ export default function WhaleProfilePage({ params }: PageProps) {
     fetchProfile();
   }, [address]);
 
-  if (loading) {
+  if (loading || !address) {
     return (
       <main className="min-h-screen">
         <Header />
