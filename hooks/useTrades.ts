@@ -12,6 +12,9 @@ interface UseTradesReturn {
   error: string | null;
   refresh: () => Promise<void>;
   lastUpdated: Date | null;
+  newTradeIds: Set<string>;
+  secondsUntilRefresh: number;
+  isLive: boolean;
 }
 
 export function useTrades(): UseTradesReturn {
@@ -19,6 +22,13 @@ export function useTrades(): UseTradesReturn {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [newTradeIds, setNewTradeIds] = useState<Set<string>>(new Set());
+  const [secondsUntilRefresh, setSecondsUntilRefresh] = useState(30);
+  const [isLive, setIsLive] = useState(true);
+
+  // Track seen trade IDs
+  const seenTradeIdsRef = useRef<Set<string>>(new Set());
+  const isFirstLoadRef = useRef(true);
 
   // AbortController ref for cleanup
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -45,8 +55,30 @@ export function useTrades(): UseTradesReturn {
         return;
       }
 
+      // Track new trades (not on first load)
+      if (!isFirstLoadRef.current) {
+        const newIds = new Set<string>();
+        for (const trade of data) {
+          if (!seenTradeIdsRef.current.has(trade.id)) {
+            newIds.add(trade.id);
+          }
+        }
+        if (newIds.size > 0) {
+          setNewTradeIds(newIds);
+          // Clear new badge after 10 seconds
+          setTimeout(() => setNewTradeIds(new Set()), 10000);
+        }
+      }
+
+      // Update seen trades
+      for (const trade of data) {
+        seenTradeIdsRef.current.add(trade.id);
+      }
+      isFirstLoadRef.current = false;
+
       setTrades(data);
       setLastUpdated(new Date());
+      setSecondsUntilRefresh(30);
     } catch (err) {
       // Ignore abort errors
       if (err instanceof Error && err.name === 'AbortError') {
@@ -64,16 +96,40 @@ export function useTrades(): UseTradesReturn {
   }, []);
 
   const refresh = useCallback(async () => {
+    setSecondsUntilRefresh(30);
     await loadTrades(false);
   }, [loadTrades]);
+
+  // Handle visibility change - pause polling when tab is hidden
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsLive(!document.hidden);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
+  // Countdown timer
+  useEffect(() => {
+    if (!isLive) return;
+
+    const countdownInterval = setInterval(() => {
+      setSecondsUntilRefresh((prev) => Math.max(0, prev - 1));
+    }, 1000);
+
+    return () => clearInterval(countdownInterval);
+  }, [isLive]);
 
   useEffect(() => {
     // Initial load
     loadTrades(true);
 
-    // Set up polling
+    // Set up polling (only when tab is visible)
     const interval = setInterval(() => {
-      loadTrades(false);
+      if (!document.hidden) {
+        loadTrades(false);
+      }
     }, POLLING_INTERVAL_MS);
 
     // Cleanup
@@ -85,5 +141,5 @@ export function useTrades(): UseTradesReturn {
     };
   }, [loadTrades]);
 
-  return { trades, loading, error, refresh, lastUpdated };
+  return { trades, loading, error, refresh, lastUpdated, newTradeIds, secondsUntilRefresh, isLive };
 }

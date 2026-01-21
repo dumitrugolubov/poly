@@ -4,11 +4,11 @@ import { useTrades } from '@/hooks/useTrades';
 import { useDownload } from '@/hooks/useDownload';
 import WhaleCard from './WhaleCard';
 import WhaleCardSkeleton from './WhaleCardSkeleton';
-import { AlertCircle, RefreshCw, Inbox } from 'lucide-react';
-import { formatTimestamp } from '@/lib/utils';
+import { AlertCircle, RefreshCw, Inbox, Radio } from 'lucide-react';
+import { formatTimestamp, cn } from '@/lib/utils';
 
 export default function Feed() {
-  const { trades, loading, error, refresh, lastUpdated } = useTrades();
+  const { trades, loading, error, refresh, lastUpdated, newTradeIds, secondsUntilRefresh, isLive } = useTrades();
   const { downloadTradeImage } = useDownload();
 
   // Loading state with skeletons
@@ -73,19 +73,36 @@ export default function Feed() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-6xl mx-auto">
-        {/* Last updated indicator */}
-        {lastUpdated && (
-          <div className="flex items-center justify-end gap-2 mb-4 text-sm text-white/40">
-            <span>Updated {formatTimestamp(Math.floor(lastUpdated.getTime() / 1000))}</span>
+        {/* Live status indicator */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              'flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium',
+              isLive ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+            )}>
+              <Radio size={14} className={isLive ? 'animate-pulse' : ''} />
+              {isLive ? 'LIVE' : 'PAUSED'}
+            </div>
+            {isLive && (
+              <span className="text-xs text-white/40">
+                Refreshing in {secondsUntilRefresh}s
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 text-sm text-white/40">
+            {lastUpdated && (
+              <span>Updated {formatTimestamp(Math.floor(lastUpdated.getTime() / 1000))}</span>
+            )}
             <button
               onClick={refresh}
-              className="p-1 hover:bg-white/10 rounded transition-colors"
+              className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
               title="Refresh now"
             >
               <RefreshCw size={14} />
             </button>
           </div>
-        )}
+        </div>
 
         {/* Error banner (when we have cached data but refresh failed) */}
         {error && trades.length > 0 && (
@@ -104,7 +121,12 @@ export default function Feed() {
         {/* Trade cards */}
         <div className="space-y-6">
           {trades.map((trade) => (
-            <WhaleCard key={trade.id} trade={trade} onDownload={downloadTradeImage} />
+            <WhaleCard
+              key={trade.id}
+              trade={trade}
+              onDownload={downloadTradeImage}
+              isNew={newTradeIds.has(trade.id)}
+            />
           ))}
         </div>
       </div>

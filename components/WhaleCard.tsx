@@ -11,9 +11,10 @@ interface WhaleCardProps {
   trade: WhaleTrade;
   onDownload: (trade: WhaleTrade) => void;
   isDownloading?: boolean;
+  isNew?: boolean;
 }
 
-const WhaleCard = memo(function WhaleCard({ trade, onDownload, isDownloading = false }: WhaleCardProps) {
+const WhaleCard = memo(function WhaleCard({ trade, onDownload, isDownloading = false, isNew = false }: WhaleCardProps) {
   const [copied, setCopied] = useState(false);
 
   // Memoized calculations
@@ -111,6 +112,14 @@ const WhaleCard = memo(function WhaleCard({ trade, onDownload, isDownloading = f
 
   return (
     <div className="relative group">
+      {/* NEW badge */}
+      {isNew && (
+        <div className="absolute -top-2 -left-2 z-20">
+          <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold px-3 py-1 rounded-full shadow-lg animate-pulse">
+            NEW
+          </div>
+        </div>
+      )}
       <div
         id={`whale-card-${trade.id}`}
         className={cn(
@@ -118,7 +127,8 @@ const WhaleCard = memo(function WhaleCard({ trade, onDownload, isDownloading = f
           'hover:scale-[1.01] hover:shadow-2xl',
           glowColor,
           'flex flex-col p-6 gap-4',
-          'md:flex-row md:p-8 md:gap-8 md:min-h-[280px]'
+          'md:flex-row md:p-8 md:gap-8 md:min-h-[280px]',
+          isNew && 'ring-2 ring-yellow-400/50 animate-[pulse_2s_ease-in-out_3]'
         )}
       >
         {/* LEFT COLUMN - Content */}
