@@ -3,8 +3,9 @@
 import { memo, useState, useMemo, useCallback } from 'react';
 import { WhaleTrade } from '@/lib/types';
 import { formatCurrency, formatTimestamp, shortenAddress, getIdenticonUrl, cn, calculateMultiplier } from '@/lib/utils';
-import { Download, TrendingUp, Twitter, Link2, Check, ExternalLink, Loader2 } from 'lucide-react';
+import { Download, TrendingUp, Twitter, Link2, Check, ExternalLink, Loader2, User } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 interface WhaleCardProps {
   trade: WhaleTrade;
@@ -145,6 +146,14 @@ const WhaleCard = memo(function WhaleCard({ trade, onDownload, isDownloading = f
                   {trade.traderName || shortenAddress(trade.traderAddress)}
                 </p>
                 <ExternalLink size={12} className="text-white/40" />
+                <Link
+                  href={`/whale/${trade.traderAddress}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-purple-400 hover:text-purple-300 transition-colors"
+                  title="View whale profile"
+                >
+                  <User size={14} />
+                </Link>
                 {trade.traderTwitterHandle && (
                   <span
                     onClick={(e) => {
