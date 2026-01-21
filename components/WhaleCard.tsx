@@ -62,10 +62,9 @@ const WhaleCard = memo(function WhaleCard({ trade, onDownload, isDownloading = f
     return null;
   }, [trade.eventSlug, trade.marketSlug]);
 
-  const traderProfileUrl = `https://polymarket.com/profile/${trade.traderAddress}`;
-  const traderMarketActivityUrl = trade.marketSlug
-    ? `https://polymarket.com/profile/${trade.traderAddress}?tab=positions`
-    : traderProfileUrl;
+  const polymarketProfileUrl = `https://polymarket.com/profile/${trade.traderAddress}`;
+  const internalWhaleUrl = `/whale/${trade.traderAddress}`;
+  const internalMarketUrl = trade.marketSlug ? `/market/${trade.marketSlug}` : null;
 
   const handleCopyLink = useCallback(async () => {
     const shortUrl = `${window.location.origin}/trade/${trade.id}`;
@@ -134,10 +133,8 @@ const WhaleCard = memo(function WhaleCard({ trade, onDownload, isDownloading = f
         {/* LEFT COLUMN - Content */}
         <div className="flex-1 md:w-[70%] flex flex-col justify-between">
           {/* Trader Info */}
-          <a
-            href={traderProfileUrl}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href={internalWhaleUrl}
             className="flex items-center gap-3 mb-4 hover:bg-white/5 rounded-lg p-2 -m-2 transition-colors cursor-pointer"
           >
             <div className="w-12 h-12 md:w-14 md:h-14 rounded-full overflow-hidden bg-white/10 flex items-center justify-center ring-2 ring-white/20">
@@ -155,15 +152,17 @@ const WhaleCard = memo(function WhaleCard({ trade, onDownload, isDownloading = f
                 <p className="text-sm md:text-base text-white/90 font-semibold hover:text-white transition-colors">
                   {trade.traderName || shortenAddress(trade.traderAddress)}
                 </p>
-                <ExternalLink size={12} className="text-white/40" />
-                <Link
-                  href={`/whale/${trade.traderAddress}`}
+                <User size={14} className="text-purple-400" />
+                <a
+                  href={polymarketProfileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="text-purple-400 hover:text-purple-300 transition-colors"
-                  title="View whale profile"
+                  className="text-white/40 hover:text-white/60 transition-colors"
+                  title="View on Polymarket"
                 >
-                  <User size={14} />
-                </Link>
+                  <ExternalLink size={12} />
+                </a>
                 {trade.traderTwitterHandle && (
                   <span
                     onClick={(e) => {
@@ -186,38 +185,64 @@ const WhaleCard = memo(function WhaleCard({ trade, onDownload, isDownloading = f
                 {formatTimestamp(trade.timestamp)}
               </p>
             </div>
-          </a>
+          </Link>
 
           {/* Market Question */}
-          <a
-            href={marketUrl || '#'}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={cn(
-              "flex-1 flex items-center gap-4 hover:bg-white/5 rounded-lg p-2 -m-2 transition-colors",
-              marketUrl ? "cursor-pointer" : "cursor-default"
-            )}
-            onClick={(e) => !marketUrl && e.preventDefault()}
-          >
-            {trade.eventImage && (
-              <div className="w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gradient-to-br from-purple-500/30 to-blue-500/30">
-                <Image
-                  src={trade.eventImage}
-                  alt="Event"
-                  width={80}
-                  height={80}
-                  className="w-full h-full object-cover"
-                  unoptimized
-                />
+          {internalMarketUrl ? (
+            <Link
+              href={internalMarketUrl}
+              className="flex-1 flex items-center gap-4 hover:bg-white/5 rounded-lg p-2 -m-2 transition-colors cursor-pointer"
+            >
+              {trade.eventImage && (
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gradient-to-br from-purple-500/30 to-blue-500/30">
+                  <Image
+                    src={trade.eventImage}
+                    alt="Event"
+                    width={80}
+                    height={80}
+                    className="w-full h-full object-cover"
+                    unoptimized
+                  />
+                </div>
+              )}
+              <div className="flex items-start gap-2">
+                <h3 className="text-xl md:text-2xl lg:text-3xl font-bold text-white leading-tight hover:text-white/90 transition-colors line-clamp-3">
+                  {trade.question}
+                </h3>
+                <TrendingUp size={16} className="text-purple-400 flex-shrink-0 mt-1" />
+                {marketUrl && (
+                  <a
+                    href={marketUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-white/40 hover:text-white/60 transition-colors"
+                    title="View on Polymarket"
+                  >
+                    <ExternalLink size={14} />
+                  </a>
+                )}
               </div>
-            )}
-            <div className="flex items-start gap-2">
-              <h3 className="text-xl md:text-2xl lg:text-3xl font-bold text-white leading-tight hover:text-white/90 transition-colors line-clamp-3">
+            </Link>
+          ) : (
+            <div className="flex-1 flex items-center gap-4 p-2 -m-2">
+              {trade.eventImage && (
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gradient-to-br from-purple-500/30 to-blue-500/30">
+                  <Image
+                    src={trade.eventImage}
+                    alt="Event"
+                    width={80}
+                    height={80}
+                    className="w-full h-full object-cover"
+                    unoptimized
+                  />
+                </div>
+              )}
+              <h3 className="text-xl md:text-2xl lg:text-3xl font-bold text-white leading-tight line-clamp-3">
                 {trade.question}
               </h3>
-              {marketUrl && <ExternalLink size={16} className="text-white/40 flex-shrink-0 mt-1" />}
             </div>
-          </a>
+          )}
 
           {/* Outcome Badge */}
           <div className="flex items-center gap-2 mt-4">
@@ -237,16 +262,14 @@ const WhaleCard = memo(function WhaleCard({ trade, onDownload, isDownloading = f
         </div>
 
         {/* RIGHT COLUMN - Financials */}
-        <a
-          href={traderMarketActivityUrl}
-          target="_blank"
-          rel="noopener noreferrer"
+        <Link
+          href={internalWhaleUrl}
           className="md:w-[30%] flex flex-col justify-center items-end text-right border-t md:border-t-0 md:border-l border-white/10 pt-6 md:pt-0 md:pl-4 hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
         >
           <div className="mb-4 w-full">
             <p className="text-sm text-white/50 mb-1 uppercase tracking-wider flex items-center justify-end gap-1">
               Bet Amount
-              <ExternalLink size={10} className="text-white/30" />
+              <User size={10} className="text-purple-400" />
             </p>
             <p className="text-2xl md:text-3xl lg:text-4xl font-bold text-white">
               {formatCurrency(trade.betAmount)}
@@ -264,7 +287,7 @@ const WhaleCard = memo(function WhaleCard({ trade, onDownload, isDownloading = f
               {multiplierDisplay}x return
             </div>
           </div>
-        </a>
+        </Link>
 
         {/* Branding Watermark */}
         <div className="absolute bottom-4 right-4 opacity-30 text-xs font-mono text-white/60">
