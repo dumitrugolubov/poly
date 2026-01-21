@@ -54,6 +54,7 @@ export async function GET(request: Request) {
       outcomes: string;
       endDate: string;
       oneDayPriceChange: number;
+      conditionId: string;
     }) => {
       let prices: number[] = [0.5, 0.5];
       let outcomes: string[] = ['Yes', 'No'];
@@ -76,6 +77,7 @@ export async function GET(request: Request) {
         prices,
         endDate: m.endDate,
         priceChange24h: m.oneDayPriceChange,
+        conditionId: m.conditionId,
       };
     });
 

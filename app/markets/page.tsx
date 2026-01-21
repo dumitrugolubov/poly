@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { TrendingUp, DollarSign, BarChart3, ExternalLink, Clock } from 'lucide-react';
+import { TrendingUp, DollarSign, BarChart3, ExternalLink, Clock, Users } from 'lucide-react';
 import Image from 'next/image';
-import Link from 'next/link';
 import Header from '@/components/Header';
-import { formatCurrency, cn } from '@/lib/utils';
+import HoldersModal from '@/components/HoldersModal';
+import { cn } from '@/lib/utils';
 
 interface Market {
   id: string;
@@ -20,12 +20,14 @@ interface Market {
   prices: number[];
   endDate: string;
   priceChange24h: number;
+  conditionId?: string;
 }
 
 export default function MarketsPage() {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'volume24hr' | 'volumeNum' | 'liquidityNum'>('volume24hr');
+  const [selectedMarket, setSelectedMarket] = useState<{ id: string; title: string } | null>(null);
 
   useEffect(() => {
     async function fetchMarkets() {
@@ -131,11 +133,8 @@ export default function MarketsPage() {
           {!loading && (
             <div className="grid gap-4">
               {markets.map((market, index) => (
-                <a
+                <div
                   key={market.id}
-                  href={`https://polymarket.com/event/${market.slug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="glassmorphism rounded-xl p-6 hover:scale-[1.01] transition-all group"
                 >
                   <div className="flex flex-col md:flex-row md:items-center gap-4">
@@ -159,7 +158,12 @@ export default function MarketsPage() {
                     </div>
 
                     {/* Question & Category */}
-                    <div className="flex-1 min-w-0">
+                    <a
+                      href={`https://polymarket.com/event/${market.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 min-w-0"
+                    >
                       <div className="flex items-start gap-2">
                         <h3 className="text-lg font-semibold text-white group-hover:text-purple-300 transition-colors line-clamp-2">
                           {market.question}
@@ -175,7 +179,7 @@ export default function MarketsPage() {
                           {formatDate(market.endDate)}
                         </span>
                       </div>
-                    </div>
+                    </a>
 
                     {/* Prices */}
                     <div className="flex gap-4 md:gap-6">
@@ -213,8 +217,18 @@ export default function MarketsPage() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Holders Button */}
+                    <button
+                      onClick={() => setSelectedMarket({ id: market.conditionId || market.id, title: market.question })}
+                      className="flex items-center gap-2 px-3 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-lg transition-colors text-sm font-medium"
+                      title="View top holders"
+                    >
+                      <Users size={16} />
+                      <span className="hidden sm:inline">Holders</span>
+                    </button>
                   </div>
-                </a>
+                </div>
               ))}
             </div>
           )}
@@ -229,6 +243,14 @@ export default function MarketsPage() {
           )}
         </div>
       </div>
+
+      {/* Holders Modal */}
+      <HoldersModal
+        marketId={selectedMarket?.id || ''}
+        marketTitle={selectedMarket?.title || ''}
+        isOpen={!!selectedMarket}
+        onClose={() => setSelectedMarket(null)}
+      />
     </main>
   );
 }
